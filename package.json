@@ -1,0 +1,27 @@
+{
+  "name": "bare-addon-resolve",
+  "version": "1.0.0",
+  "description": "Low-level addon resolution algorithm for Bare",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "scripts": {
+    "test": "standard && bare test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holepunchto/bare-addon-resolve.git"
+  },
+  "author": "Holepunch",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/holepunchto/bare-addon-resolve/issues"
+  },
+  "homepage": "https://github.com/holepunchto/bare-addon-resolve#readme",
+  "devDependencies": {
+    "brittle": "^3.2.1",
+    "standard": "^17.0.0"
+  }
+}

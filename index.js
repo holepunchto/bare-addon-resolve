@@ -56,9 +56,13 @@ function defaultReadPackage () {
 exports.addon = function * (specifier, parentURL, opts = {}) {
   let { name = null, version = null, builtins = [], builtinProtocol = 'builtin:' } = opts
 
+  if (startsWithWindowsDriveLetter(specifier)) {
+    specifier = '/' + specifier
+  }
+
   let directoryURL
 
-  if (specifier[specifier.length - 1] === '/') {
+  if (specifier[specifier.length - 1] === '/' || specifier[specifier.length - 1] === '\\') {
     directoryURL = new URL(specifier, parentURL)
   } else {
     directoryURL = new URL(specifier + '/', parentURL)
@@ -116,12 +120,12 @@ exports.lookupPrebuildsScope = function * lookupPrebuildsScope (url, opts = {}) 
     yield new URL('prebuilds/' + host + '/', scopeURL)
 
     scopeURL.pathname = scopeURL.pathname.substring(0, scopeURL.pathname.lastIndexOf('/'))
+
+    if (scopeURL.pathname.length === 3 && isWindowsDriveLetter(scopeURL.pathname.substring(1))) break
   } while (scopeURL.pathname !== '/')
 }
 
 exports.file = function * (filename, parentURL, opts = {}) {
-  if (filename === '.' || filename === '..' || filename[filename.length - 1] === '/') return false
-
   if (parentURL.protocol === 'file:' && /%2f|%5c/i.test(filename)) {
     throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${filename}' is invalid`)
   }
@@ -133,4 +137,38 @@ exports.file = function * (filename, parentURL, opts = {}) {
   }
 
   return extensions.length > 0
+}
+
+// https://infra.spec.whatwg.org/#ascii-upper-alpha
+function isASCIIUpperAlpha (c) {
+  return c >= 0x41 && c <= 0x5a
+}
+
+// https://infra.spec.whatwg.org/#ascii-lower-alpha
+function isASCIILowerAlpha (c) {
+  return c >= 0x61 && c <= 0x7a
+}
+
+// https://infra.spec.whatwg.org/#ascii-alpha
+function isASCIIAlpha (c) {
+  return isASCIIUpperAlpha(c) || isASCIILowerAlpha(c)
+}
+
+// https://url.spec.whatwg.org/#windows-drive-letter
+function isWindowsDriveLetter (input) {
+  return input.length >= 2 && isASCIIAlpha(input.charCodeAt(0)) && (
+    input.charCodeAt(1) === 0x3a ||
+    input.charCodeAt(1) === 0x7c
+  )
+}
+
+// https://url.spec.whatwg.org/#start-with-a-windows-drive-letter
+function startsWithWindowsDriveLetter (input) {
+  return input.length >= 2 && isWindowsDriveLetter(input) && (
+    input.length === 2 ||
+    input.charCodeAt(2) === 0x2f ||
+    input.charCodeAt(2) === 0x5c ||
+    input.charCodeAt(2) === 0x3f ||
+    input.charCodeAt(2) === 0x23
+  )
 }

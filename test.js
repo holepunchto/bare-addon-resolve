@@ -21,10 +21,7 @@ test('relative specifier, pkg.name', (t) => {
   }
 
   t.alike(result, [
-    `file:///a/b/d/prebuilds/${host}/d.bare`,
-    `file:///a/b/prebuilds/${host}/d.bare`,
-    `file:///a/prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d.bare`
+    `file:///a/b/d/prebuilds/${host}/d.bare`
   ])
 })
 
@@ -48,13 +45,7 @@ test('relative specifier, pkg.name + pkg.version', (t) => {
 
   t.alike(result, [
     `file:///a/b/d/prebuilds/${host}/d.bare`,
-    `file:///a/b/d/prebuilds/${host}/d@1.2.3.bare`,
-    `file:///a/b/prebuilds/${host}/d.bare`,
-    `file:///a/b/prebuilds/${host}/d@1.2.3.bare`,
-    `file:///a/prebuilds/${host}/d.bare`,
-    `file:///a/prebuilds/${host}/d@1.2.3.bare`,
-    `file:///prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d@1.2.3.bare`
+    `file:///a/b/d/prebuilds/${host}/d@1.2.3.bare`
   ])
 })
 
@@ -76,9 +67,7 @@ test('relative specifier, current directory', (t) => {
   }
 
   t.alike(result, [
-    `file:///a/b/prebuilds/${host}/d.bare`,
-    `file:///a/prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d.bare`
+    `file:///a/b/prebuilds/${host}/d.bare`
   ])
 })
 
@@ -100,8 +89,7 @@ test('relative specifier, parent directory', (t) => {
   }
 
   t.alike(result, [
-    `file:///a/prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d.bare`
+    `file:///a/prebuilds/${host}/d.bare`
   ])
 })
 
@@ -123,8 +111,7 @@ test('absolute specifier, pkg.name', (t) => {
   }
 
   t.alike(result, [
-    `file:///d/prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d.bare`
+    `file:///d/prebuilds/${host}/d.bare`
   ])
 })
 
@@ -146,8 +133,7 @@ test('absolute specifier, Windows path', (t) => {
   }
 
   t.alike(result, [
-    `file:///d/prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d.bare`
+    `file:///d/prebuilds/${host}/d.bare`
   ])
 })
 
@@ -169,8 +155,7 @@ test('absolute specifier, Windows path with drive letter', (t) => {
   }
 
   t.alike(result, [
-    `file:///c:/d/prebuilds/${host}/d.bare`,
-    `file:///c:/prebuilds/${host}/d.bare`
+    `file:///c:/d/prebuilds/${host}/d.bare`
   ])
 })
 
@@ -192,4 +177,53 @@ test('builtin', (t) => {
   }
 
   t.alike(result, ['builtin:e'])
+})
+
+test('prebuilds option', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const prebuilds = new URL(`file:///f/prebuilds/${host}/`)
+
+  const result = []
+
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { prebuilds, extensions: ['.bare'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['file:///f/prebuilds/host/e.bare'])
+})
+
+test('prebuilds + name option', (t) => {
+  const prebuilds = new URL(`file:///f/prebuilds/${host}/`)
+
+  const result = []
+
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { prebuilds, name: 'e', extensions: ['.bare'] })) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['file:///f/prebuilds/host/e.bare'])
+})
+
+test('prebuilds + name + version option', (t) => {
+  const prebuilds = new URL(`file:///f/prebuilds/${host}/`)
+
+  const result = []
+
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { prebuilds, name: 'e', version: '1.2.3', extensions: ['.bare'] })) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'file:///f/prebuilds/host/e.bare',
+    'file:///f/prebuilds/host/e@1.2.3.bare'
+  ])
 })

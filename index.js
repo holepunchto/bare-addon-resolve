@@ -56,7 +56,7 @@ function defaultReadPackage () {
 exports.addon = function * (specifier, parentURL, opts = {}) {
   let { name = null, version = null, builtins = [], builtinProtocol = 'builtin:' } = opts
 
-  if (startsWithWindowsDriveLetter(specifier)) {
+  if (exports.startsWithWindowsDriveLetter(specifier)) {
     specifier = '/' + specifier
   }
 
@@ -110,19 +110,11 @@ exports.addon = function * (specifier, parentURL, opts = {}) {
 }
 
 exports.lookupPrebuildsScope = function * lookupPrebuildsScope (url, opts = {}) {
-  const { host = null } = opts
+  const { prebuilds = null, host = null } = opts
 
-  if (host === null) return
+  if (host) yield new URL('prebuilds/' + host + '/', url)
 
-  const scopeURL = new URL(url.href)
-
-  do {
-    yield new URL('prebuilds/' + host + '/', scopeURL)
-
-    scopeURL.pathname = scopeURL.pathname.substring(0, scopeURL.pathname.lastIndexOf('/'))
-
-    if (scopeURL.pathname.length === 3 && isWindowsDriveLetter(scopeURL.pathname.substring(1))) break
-  } while (scopeURL.pathname !== '/')
+  if (prebuilds) yield prebuilds
 }
 
 exports.file = function * (filename, parentURL, opts = {}) {
@@ -155,7 +147,7 @@ function isASCIIAlpha (c) {
 }
 
 // https://url.spec.whatwg.org/#windows-drive-letter
-function isWindowsDriveLetter (input) {
+exports.isWindowsDriveLetter = function isWindowsDriveLetter (input) {
   return input.length >= 2 && isASCIIAlpha(input.charCodeAt(0)) && (
     input.charCodeAt(1) === 0x3a ||
     input.charCodeAt(1) === 0x7c
@@ -163,8 +155,8 @@ function isWindowsDriveLetter (input) {
 }
 
 // https://url.spec.whatwg.org/#start-with-a-windows-drive-letter
-function startsWithWindowsDriveLetter (input) {
-  return input.length >= 2 && isWindowsDriveLetter(input) && (
+exports.startsWithWindowsDriveLetter = function startsWithWindowsDriveLetter (input) {
+  return input.length >= 2 && exports.isWindowsDriveLetter(input) && (
     input.length === 2 ||
     input.charCodeAt(2) === 0x2f ||
     input.charCodeAt(2) === 0x5c ||

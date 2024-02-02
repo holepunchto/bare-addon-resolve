@@ -58,11 +58,9 @@ Options include:
   // The protocol to use for resolved builtin addon specifiers.
   builtinProtocol: 'builtin:',
   // The `<platform>-<arch>` combination to look for when resolving dynamic
-  // addons. If `null`, only builtin specifiers and addons in `prebuilds` can
-  // be resolved. In Bare, pass `Bare.Addon.host`.
+  // addons. If `null`, only builtin specifiers can be resolved. In Bare,
+  // pass `Bare.Addon.host`.
   host: null,
-  // An additional URL to consider when resolving dynamic addons.
-  prebuilds: null,
   // The file extensions to look for when resolving dynamic addons.
   extensions: [],
 }

@@ -193,3 +193,19 @@ test('builtin', (t) => {
 
   t.alike(result, ['builtin:e'])
 })
+
+test('resolutions map', (t) => {
+  const resolutions = {
+    'file:///a/b/': {
+      'bare:addon': './d.bare'
+    }
+  }
+
+  const result = []
+
+  for (const resolution of resolve('.', new URL('file:///a/b/c'), { resolutions })) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['file:///a/b/d.bare'])
+})

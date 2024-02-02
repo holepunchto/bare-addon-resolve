@@ -63,6 +63,9 @@ Options include:
   host: null,
   // The file extensions to look for when resolving dynamic addons.
   extensions: [],
+  // A map of preresolved imports with keys being serialized directory URLs and
+  // values being "imports" maps.
+  resolutions
 }
 ```
 
@@ -91,7 +94,7 @@ while (next.done !== true) {
 
     next = generator.next(info)
   } else {
-    const resolution = value.addon
+    const resolution = value.resolution
 
     next = generator.next()
   }
@@ -101,6 +104,8 @@ while (next.done !== true) {
 Options are the same as `resolve()` for all functions.
 
 #### `const generator = resolve.addon(specifier, parentURL[, options])`
+
+#### `const generator = resolve.preresolved(directoryURL, resolutions[, options])`
 
 #### `const generator = resolve.file(filename, parentURL, isIndex[, options])`
 

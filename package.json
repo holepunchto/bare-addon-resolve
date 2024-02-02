@@ -20,6 +20,9 @@
     "url": "https://github.com/holepunchto/bare-addon-resolve/issues"
   },
   "homepage": "https://github.com/holepunchto/bare-addon-resolve#readme",
+  "dependencies": {
+    "bare-module-resolve": "^1.5.0"
+  },
   "devDependencies": {
     "brittle": "^3.2.1",
     "standard": "^17.0.0"

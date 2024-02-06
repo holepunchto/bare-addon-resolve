@@ -47,14 +47,14 @@ test('relative specifier, pkg.name + pkg.version', (t) => {
   }
 
   t.alike(result, [
-    `file:///a/b/d/prebuilds/${host}/d.bare`,
     `file:///a/b/d/prebuilds/${host}/d@1.2.3.bare`,
-    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/b/d/prebuilds/${host}/d.bare`,
     `file:///a/b/prebuilds/${host}/d@1.2.3.bare`,
-    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///a/b/prebuilds/${host}/d.bare`,
     `file:///a/prebuilds/${host}/d@1.2.3.bare`,
-    `file:///prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d@1.2.3.bare`
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d@1.2.3.bare`,
+    `file:///prebuilds/${host}/d.bare`
   ])
 })
 
@@ -174,7 +174,7 @@ test('absolute specifier, Windows path with drive letter', (t) => {
   ])
 })
 
-test('builtin', (t) => {
+test('builtin, pkg.name', (t) => {
   function readPackage (url) {
     if (url.href === 'file:///a/b/d/package.json') {
       return {
@@ -192,6 +192,27 @@ test('builtin', (t) => {
   }
 
   t.alike(result, ['builtin:e'])
+})
+
+test('builtin, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { host, extensions: ['.bare'], builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
 })
 
 test('resolutions map', (t) => {

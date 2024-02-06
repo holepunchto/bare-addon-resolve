@@ -93,6 +93,14 @@ exports.addon = function * (specifier, parentURL, opts = {}) {
     }
   }
 
+  if (version !== null) {
+    if (builtins.includes(name + '@' + version)) {
+      yield { resolution: new URL(builtinProtocol + name + '@' + version) }
+
+      return true
+    }
+  }
+
   if (builtins.includes(name)) {
     yield { resolution: new URL(builtinProtocol + name) }
 
@@ -102,14 +110,14 @@ exports.addon = function * (specifier, parentURL, opts = {}) {
   let yielded = false
 
   for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
-    if (yield * exports.file(name, prebuildsURL, opts)) {
-      yielded = true
-    }
-
     if (version !== null) {
       if (yield * exports.file(name + '@' + version, prebuildsURL, opts)) {
         yielded = true
       }
+    }
+
+    if (yield * exports.file(name, prebuildsURL, opts)) {
+      yielded = true
     }
   }
 

@@ -105,9 +105,13 @@ Options are the same as `resolve()` for all functions.
 
 #### `const generator = resolve.addon(specifier, parentURL[, options])`
 
+#### `const generator = resolve.package(packageSpecifier, parentURL[, options])`
+
 #### `const generator = resolve.preresolved(directoryURL, resolutions[, options])`
 
-#### `const generator = resolve.file(filename, parentURL, isIndex[, options])`
+#### `const generator = resolve.file(filename, parentURL[, options])`
+
+#### `const generator = resolve.directory(dirname, parentURL[, options])`
 
 ## License
 

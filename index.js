@@ -55,73 +55,55 @@ function defaultReadPackage () {
 }
 
 exports.addon = function * (specifier, parentURL, opts = {}) {
-  let { name = null, version = null, builtins = [], builtinProtocol = 'builtin:', resolutions = null } = opts
-
   if (exports.startsWithWindowsDriveLetter(specifier)) {
     specifier = '/' + specifier
   }
 
-  let directoryURL
+  if (specifier === '.' || specifier === '..' || specifier[0] === '/' || specifier[0] === '\\' || specifier.startsWith('./') || specifier.startsWith('.\\') || specifier.startsWith('../') || specifier.startsWith('..\\')) {
+    return yield * exports.directory(specifier, parentURL, opts)
+  }
 
-  if (specifier[specifier.length - 1] === '/' || specifier[specifier.length - 1] === '\\') {
-    directoryURL = new URL(specifier, parentURL)
+  return yield * exports.package(specifier, parentURL, opts)
+}
+
+exports.package = function * (packageSpecifier, parentURL, opts = {}) {
+  let packageName
+
+  if (packageSpecifier === '') {
+    throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
+  }
+
+  if (packageSpecifier[0] !== '@') {
+    packageName = packageSpecifier.split('/', 1).join()
   } else {
-    directoryURL = new URL(specifier + '/', parentURL)
-  }
-
-  if (resolutions) {
-    if (yield * exports.preresolved(directoryURL, resolutions, opts)) {
-      return true
+    if (!packageSpecifier.includes('/')) {
+      throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
     }
+
+    packageName = packageSpecifier.split('/', 2).join('/')
   }
 
-  if (name === null) {
-    const info = yield { package: new URL('package.json', directoryURL) }
+  if (packageName[0] === '.' || packageName.includes('\\') || packageName.includes('%')) {
+    throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
+  }
+
+  const packageSubpath = '.' + packageSpecifier.substring(packageName.length)
+
+  parentURL = new URL(parentURL.href)
+
+  do {
+    const packageURL = new URL('node_modules/' + packageName + '/', parentURL)
+
+    parentURL.pathname = parentURL.pathname.substring(0, parentURL.pathname.lastIndexOf('/'))
+
+    const info = yield { package: new URL('package.json', packageURL) }
 
     if (info) {
-      if (typeof info.name === 'string' && info.name !== '') {
-        name = info.name.replace(/\//g, '+')
-      } else {
-        return false
-      }
-
-      if (typeof info.version === 'string' && info.version !== '') {
-        version = info.version
-      }
-    } else {
-      return false
+      return yield * exports.directory(packageSubpath, packageURL, opts)
     }
-  }
+  } while (parentURL.pathname !== '/')
 
-  if (version !== null) {
-    if (builtins.includes(name + '@' + version)) {
-      yield { resolution: new URL(builtinProtocol + name + '@' + version) }
-
-      return true
-    }
-  }
-
-  if (builtins.includes(name)) {
-    yield { resolution: new URL(builtinProtocol + name) }
-
-    return true
-  }
-
-  let yielded = false
-
-  for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
-    if (version !== null) {
-      if (yield * exports.file(name + '@' + version, prebuildsURL, opts)) {
-        yielded = true
-      }
-    }
-
-    if (yield * exports.file(name, prebuildsURL, opts)) {
-      yielded = true
-    }
-  }
-
-  return yielded
+  return false
 }
 
 exports.preresolved = function * (directoryURL, resolutions, opts = {}) {
@@ -162,6 +144,73 @@ exports.file = function * (filename, parentURL, opts = {}) {
   }
 
   return extensions.length > 0
+}
+
+exports.directory = function * (dirname, parentURL, opts = {}) {
+  const { builtins = [], builtinProtocol = 'builtin:', resolutions = null } = opts
+
+  let directoryURL
+
+  if (dirname[dirname.length - 1] === '/' || dirname[dirname.length - 1] === '\\') {
+    directoryURL = new URL(dirname, parentURL)
+  } else {
+    directoryURL = new URL(dirname + '/', parentURL)
+  }
+
+  if (resolutions) {
+    if (yield * exports.preresolved(directoryURL, resolutions, opts)) {
+      return true
+    }
+  }
+
+  let name = null
+  let version = null
+
+  const info = yield { package: new URL('package.json', directoryURL) }
+
+  if (info) {
+    if (typeof info.name === 'string' && info.name !== '') {
+      name = info.name.replace(/\//g, '+')
+    } else {
+      return false
+    }
+
+    if (typeof info.version === 'string' && info.version !== '') {
+      version = info.version
+    }
+  } else {
+    return false
+  }
+
+  if (version !== null) {
+    if (builtins.includes(name + '@' + version)) {
+      yield { resolution: new URL(builtinProtocol + name + '@' + version) }
+
+      return true
+    }
+  }
+
+  if (builtins.includes(name)) {
+    yield { resolution: new URL(builtinProtocol + name) }
+
+    return true
+  }
+
+  let yielded = false
+
+  for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
+    if (version !== null) {
+      if (yield * exports.file(name + '@' + version, prebuildsURL, opts)) {
+        yielded = true
+      }
+    }
+
+    if (yield * exports.file(name, prebuildsURL, opts)) {
+      yielded = true
+    }
+  }
+
+  return yielded
 }
 
 exports.isWindowsDriveLetter = resolve.isWindowsDriveLetter

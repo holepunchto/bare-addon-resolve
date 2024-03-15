@@ -314,6 +314,58 @@ test('builtin, bare specifier, pkg.name + pkg.version', (t) => {
   t.alike(result, ['builtin:e'])
 })
 
+test('self reference, pkg.name', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host, extensions: ['.bare'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/host/e.bare',
+    'file:///a/prebuilds/host/e.bare',
+    'file:///prebuilds/host/e.bare'
+  ])
+})
+
+test('self reference, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host, extensions: ['.bare'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/host/e@1.2.3.bare',
+    'file:///a/b/prebuilds/host/e.bare',
+    'file:///a/prebuilds/host/e@1.2.3.bare',
+    'file:///a/prebuilds/host/e.bare',
+    'file:///prebuilds/host/e@1.2.3.bare',
+    'file:///prebuilds/host/e.bare'
+  ])
+})
+
 test('resolutions map', (t) => {
   const resolutions = {
     'file:///a/b/': {

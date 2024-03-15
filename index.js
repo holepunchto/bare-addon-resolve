@@ -89,6 +89,10 @@ exports.package = function * (packageSpecifier, parentURL, opts = {}) {
 
   const packageSubpath = '.' + packageSpecifier.substring(packageName.length)
 
+  if (yield * exports.packageSelf(packageName, packageSubpath, parentURL, opts)) {
+    return true
+  }
+
   parentURL = new URL(parentURL.href)
 
   do {
@@ -102,6 +106,22 @@ exports.package = function * (packageSpecifier, parentURL, opts = {}) {
       return yield * exports.directory(packageSubpath, packageURL, opts)
     }
   } while (parentURL.pathname !== '/')
+
+  return false
+}
+
+exports.packageSelf = function * (packageName, packageSubpath, parentURL, opts = {}) {
+  for (const packageURL of resolve.lookupPackageScope(parentURL, opts)) {
+    const info = yield { package: packageURL }
+
+    if (info) {
+      if (info.name === packageName) {
+        return yield * exports.directory(packageSubpath, packageURL, opts)
+      }
+
+      break
+    }
+  }
 
   return false
 }

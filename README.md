@@ -57,6 +57,10 @@ Options include:
   builtins: [],
   // The protocol to use for resolved builtin addon specifiers.
   builtinProtocol: 'builtin:',
+  // Whether or not addons linked ahead-of-time should be resolved.
+  linked: true,
+  // The protocol to use for addons linked ahead-of-time.
+  linkedProtocol: 'linked:',
   // The `<platform>-<arch>` combination to look for when resolving dynamic
   // addons. If `null`, only builtin specifiers can be resolved. In Bare,
   // pass `Bare.Addon.host`.

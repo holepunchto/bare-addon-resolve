@@ -381,3 +381,128 @@ test('resolutions map', (t) => {
 
   t.alike(result, ['file:///a/b/d.bare'])
 })
+
+test('linked module, darwin', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'linked:libe.1.2.3.dylib',
+    'linked:libe.dylib'
+  ])
+})
+
+test('linked module, ios', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'ios-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'linked:libe.1.2.3.dylib',
+    'linked:libe.dylib'
+  ])
+})
+
+test('linked module, linux', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'linux-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'linked:libe.so.1.2.3',
+    'linked:libe.so'
+  ])
+})
+
+test('linked module, android', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'android-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'linked:libe.so.1.2.3',
+    'linked:libe.so'
+  ])
+})
+
+test('linked module, win32', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'win32-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'linked:e-1.2.3.dll',
+    'linked:e.dll'
+  ])
+})

@@ -113,6 +113,8 @@ Options are the same as `resolve()` for all functions.
 
 #### `const generator = resolve.directory(dirname, parentURL[, options])`
 
+#### `const generator = resolve.linked(name, version[, options])`
+
 ## License
 
 Apache-2.0

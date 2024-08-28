@@ -230,7 +230,49 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
     }
   }
 
+  if (yield * exports.linked(name, version, opts)) {
+    yielded = true
+  }
+
   return yielded
+}
+
+exports.linked = function * (name, version = null, opts = {}) {
+  const { linked = true, linkedProtocol = 'linked:', host = null } = opts
+
+  if (linked === false || host === null) return false
+
+  if (host.startsWith('darwin-') || host.startsWith('ios-')) {
+    if (version !== null) {
+      yield { resolution: new URL(linkedProtocol + 'lib' + name + '.' + version + '.dylib') }
+    }
+
+    yield { resolution: new URL(linkedProtocol + 'lib' + name + '.dylib') }
+
+    return true
+  }
+
+  if (host.startsWith('linux-') || host.startsWith('android-')) {
+    if (version !== null) {
+      yield { resolution: new URL(linkedProtocol + 'lib' + name + '.so.' + version) }
+    }
+
+    yield { resolution: new URL(linkedProtocol + 'lib' + name + '.so') }
+
+    return true
+  }
+
+  if (host.startsWith('win32-')) {
+    if (version !== null) {
+      yield { resolution: new URL(linkedProtocol + name + '-' + version + '.dll') }
+    }
+
+    yield { resolution: new URL(linkedProtocol + name + '.dll') }
+
+    return true
+  }
+
+  return false
 }
 
 exports.isWindowsDriveLetter = resolve.isWindowsDriveLetter

@@ -452,7 +452,7 @@ test('linked module, linux', (t) => {
   }
 
   t.alike(result, [
-    'linked:libe.so.1.2.3',
+    'linked:libe.1.2.3.so',
     'linked:libe.so'
   ])
 })
@@ -477,7 +477,7 @@ test('linked module, android', (t) => {
   }
 
   t.alike(result, [
-    'linked:libe.so.1.2.3',
+    'linked:libe.1.2.3.so',
     'linked:libe.so'
   ])
 })

@@ -254,7 +254,7 @@ exports.linked = function * (name, version = null, opts = {}) {
 
   if (host.startsWith('linux-') || host.startsWith('android-')) {
     if (version !== null) {
-      yield { resolution: new URL(linkedProtocol + 'lib' + name + '.so.' + version) }
+      yield { resolution: new URL(linkedProtocol + 'lib' + name + '.' + version + '.so') }
     }
 
     yield { resolution: new URL(linkedProtocol + 'lib' + name + '.so') }

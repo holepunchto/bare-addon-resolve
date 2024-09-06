@@ -246,12 +246,10 @@ exports.linked = function * (name, version = null, opts = {}) {
     if (version !== null) {
       yield { resolution: new URL(linkedProtocol + 'lib' + name + '.' + version + '.dylib') }
       yield { resolution: new URL(linkedProtocol + name + '.' + version + '.framework/' + name + '.' + version) }
-      yield { resolution: new URL(linkedProtocol + name + '.' + version + '.bundle') }
     }
 
     yield { resolution: new URL(linkedProtocol + 'lib' + name + '.dylib') }
     yield { resolution: new URL(linkedProtocol + name + '.framework/' + name) }
-    yield { resolution: new URL(linkedProtocol + name + '.bundle') }
 
     return true
   }

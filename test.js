@@ -403,7 +403,11 @@ test('linked module, darwin', (t) => {
 
   t.alike(result, [
     'linked:libe.1.2.3.dylib',
-    'linked:libe.dylib'
+    'linked:e.1.2.3.framework/e.1.2.3',
+    'linked:e.1.2.3.bundle',
+    'linked:libe.dylib',
+    'linked:e.framework/e',
+    'linked:e.bundle'
   ])
 })
 
@@ -427,8 +431,8 @@ test('linked module, ios', (t) => {
   }
 
   t.alike(result, [
-    'linked:libe.1.2.3.dylib',
-    'linked:libe.dylib'
+    'linked:e.1.2.3.framework/e.1.2.3',
+    'linked:e.framework/e'
   ])
 })
 

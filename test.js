@@ -368,14 +368,16 @@ test('self reference, pkg.name + pkg.version', (t) => {
 
 test('resolutions map', (t) => {
   const resolutions = {
-    'file:///a/b/': {
-      'bare:addon': './d.bare'
+    'file:///a/b/c': {
+      '.': {
+        addon: './d.bare'
+      }
     }
   }
 
   const result = []
 
-  for (const resolution of resolve('.', new URL('file:///a/b/c'), { resolutions })) {
+  for (const resolution of resolve('.', new URL('file:///a/b/c'), { resolutions, conditions: ['addon'] })) {
     result.push(resolution.href)
   }
 
@@ -507,4 +509,20 @@ test('linked module, win32', (t) => {
     'linked:e-1.2.3.dll',
     'linked:e.dll'
   ])
+})
+
+test('prebuilds scope lookup with resolutions map', (t) => {
+  const resolutions = {
+    'file:///a/b/': {
+      '#prebuilds': 'file:///a/prebuilds/' + host + '/'
+    }
+  }
+
+  const result = []
+
+  for (const scope of resolve.lookupPrebuildsScope(new URL('file:///a/b/'), { resolutions })) {
+    result.push(scope.href)
+  }
+
+  t.alike(result, ['file:///a/prebuilds/' + host + '/'])
 })

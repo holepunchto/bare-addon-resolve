@@ -55,8 +55,16 @@ function defaultReadPackage () {
 }
 
 exports.addon = function * (specifier, parentURL, opts = {}) {
+  const { resolutions = null } = opts
+
   if (exports.startsWithWindowsDriveLetter(specifier)) {
     specifier = '/' + specifier
+  }
+
+  if (resolutions) {
+    if (yield * resolve.preresolved(specifier, resolutions, parentURL, opts)) {
+      return true
+    }
   }
 
   if (specifier === '.' || specifier === '..' || specifier[0] === '/' || specifier[0] === '\\' || specifier.startsWith('./') || specifier.startsWith('.\\') || specifier.startsWith('../') || specifier.startsWith('..\\')) {
@@ -126,18 +134,14 @@ exports.packageSelf = function * (packageName, packageSubpath, parentURL, opts =
   return false
 }
 
-exports.preresolved = function * (directoryURL, resolutions, opts = {}) {
-  const imports = resolutions[directoryURL.href]
-
-  if (typeof imports === 'object' && imports !== null) {
-    return yield * resolve.packageImportsExports('bare:addon', imports, directoryURL, true, opts)
-  }
-
-  return false
-}
-
 exports.lookupPrebuildsScope = function * lookupPrebuildsScope (url, opts = {}) {
-  const { host = null } = opts
+  const { resolutions = null, host = null } = opts
+
+  if (resolutions) {
+    for (const { resolution } of resolve.preresolved('#prebuilds', resolutions, url, opts)) {
+      if (resolution) return yield resolution
+    }
+  }
 
   if (host === null) return
 
@@ -167,7 +171,7 @@ exports.file = function * (filename, parentURL, opts = {}) {
 }
 
 exports.directory = function * (dirname, parentURL, opts = {}) {
-  const { builtins = [], builtinProtocol = 'builtin:', resolutions = null } = opts
+  const { builtins = [], builtinProtocol = 'builtin:' } = opts
 
   let directoryURL
 
@@ -175,12 +179,6 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
     directoryURL = new URL(dirname, parentURL)
   } else {
     directoryURL = new URL(dirname + '/', parentURL)
-  }
-
-  if (resolutions) {
-    if (yield * exports.preresolved(directoryURL, resolutions, opts)) {
-      return true
-    }
   }
 
   let name = null

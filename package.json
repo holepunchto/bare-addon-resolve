@@ -1,6 +1,6 @@
 {
   "name": "bare-addon-resolve",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Low-level addon resolution algorithm for Bare",
   "exports": {
     ".": "./index.js",

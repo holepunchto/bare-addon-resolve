@@ -184,12 +184,8 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
   // Internal preresolution path, do not depend on this! It will be removed without
   // warning.
   if (resolutions) {
-    const imports = resolutions[directoryURL.href]
-
-    if (typeof imports === 'object' && imports !== null) {
-      if (yield * resolve.packageImportsExports('bare:addon', imports, directoryURL, true, opts)) {
-        return true
-      }
+    if (yield * resolve.preresolved('bare:addon', resolutions, directoryURL, opts)) {
+      return true
     }
   }
 

@@ -171,7 +171,7 @@ exports.file = function * (filename, parentURL, opts = {}) {
 }
 
 exports.directory = function * (dirname, parentURL, opts = {}) {
-  const { builtins = [], builtinProtocol = 'builtin:' } = opts
+  const { resolutions = null, builtins = [], builtinProtocol = 'builtin:' } = opts
 
   let directoryURL
 
@@ -179,6 +179,18 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
     directoryURL = new URL(dirname, parentURL)
   } else {
     directoryURL = new URL(dirname + '/', parentURL)
+  }
+
+  // Internal preresolution path, do not depend on this! It will be removed without
+  // warning.
+  if (resolutions) {
+    const imports = resolutions[directoryURL.href]
+
+    if (typeof imports === 'object' && imports !== null) {
+      if (yield * resolve.packageImportsExports('bare:addon', imports, directoryURL, true, opts)) {
+        return true
+      }
+    }
   }
 
   let name = null

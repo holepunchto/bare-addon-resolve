@@ -107,6 +107,9 @@ while (next.done !== true) {
 
 Options are the same as `resolve()` for all functions.
 
+> [!WARNING]
+> These functions are currently subject to change between minor releases. If using them directly, make sure to specify a tilde range (`~1.2.3`) when declaring the module dependency.
+
 #### `const generator = resolve.addon(specifier, parentURL[, options])`
 
 #### `const generator = resolve.package(packageSpecifier, parentURL[, options])`

@@ -526,3 +526,23 @@ test('prebuilds scope lookup with resolutions map', (t) => {
 
   t.alike(result, ['file:///a/prebuilds/' + host + '/'])
 })
+
+test('prebuilds scope lookup with root file: URL', (t) => {
+  const result = []
+
+  for (const scope of resolve.lookupPrebuildsScope(new URL('file:///'), { host })) {
+    result.push(scope.href)
+  }
+
+  t.alike(result, ['file:///prebuilds/' + host + '/'])
+})
+
+test('prebuilds scope lookup with root non-file: URL', (t) => {
+  const result = []
+
+  for (const scope of resolve.lookupPrebuildsScope(new URL('drive:///'), { host })) {
+    result.push(scope.href)
+  }
+
+  t.alike(result, ['drive:///prebuilds/' + host + '/'])
+})

@@ -171,7 +171,7 @@ exports.file = function * (filename, parentURL, opts = {}) {
 }
 
 exports.directory = function * (dirname, parentURL, opts = {}) {
-  const { resolutions = null, builtins = [], builtinProtocol = 'builtin:' } = opts
+  const { resolutions = null, builtins = [] } = opts
 
   let directoryURL
 
@@ -208,17 +208,7 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
     return false
   }
 
-  if (version !== null) {
-    if (builtins.includes(name + '@' + version)) {
-      yield { resolution: new URL(builtinProtocol + name + '@' + version) }
-
-      return true
-    }
-  }
-
-  if (builtins.includes(name)) {
-    yield { resolution: new URL(builtinProtocol + name) }
-
+  if (yield * resolve.builtinTarget(name, version, builtins, opts)) {
     return true
   }
 

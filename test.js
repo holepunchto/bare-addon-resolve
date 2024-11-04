@@ -245,7 +245,7 @@ test('builtin, pkg.name', (t) => {
 
   const result = []
 
-  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { host, extensions: ['.bare'], builtins: ['e'] }, readPackage)) {
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -266,7 +266,7 @@ test('builtin, pkg.name + pkg.version', (t) => {
 
   const result = []
 
-  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { host, extensions: ['.bare'], builtins: ['e@1.2.3'] }, readPackage)) {
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -286,7 +286,7 @@ test('builtin, bare specifier, pkg.name', (t) => {
 
   const result = []
 
-  for (const resolution of resolve('d', new URL('file:///a/b/c'), { host, extensions: ['.bare'], builtins: ['e'] }, readPackage)) {
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -307,11 +307,61 @@ test('builtin, bare specifier, pkg.name + pkg.version', (t) => {
 
   const result = []
 
-  for (const resolution of resolve('d', new URL('file:///a/b/c'), { host, extensions: ['.bare'], builtins: ['e'] }, readPackage)) {
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
     result.push(resolution.href)
   }
 
-  t.alike(result, ['builtin:e'])
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('builtin, bare specifier, pkg.name + pkg.version, version mismatch', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: ['e@1.2.4'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('conditional builtin, bare specifier, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  let result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: [{ addon: 'e' }], conditions: ['addon'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+
+  result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: [{ addon: 'e' }] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
 })
 
 test('self reference, pkg.name', (t) => {

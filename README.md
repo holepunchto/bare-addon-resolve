@@ -106,6 +106,8 @@ Options are the same as `resolve()` for all functions.
 
 #### `const generator = resolve.addon(specifier, parentURL[, options])`
 
+#### `const generator = resolve.url(url, parentURL[, options])`
+
 #### `const generator = resolve.package(packageSpecifier, packageVersion, parentURL[, options])`
 
 #### `const generator = resolve.packageSelf(packageName, packageSubpath, packageVersion, parentURL[, options])`

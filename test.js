@@ -61,6 +61,80 @@ test('bare specifier, pkg.name + pkg.version', (t) => {
   ])
 })
 
+test('versioned bare specifier, pkg.name', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.3', new URL('file:///a/b/c'), { host, extensions: ['.bare'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/d/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///a/b/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///a/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///prebuilds/${host}/d@1.2.3.bare`
+  ])
+})
+
+test('versioned bare specifier, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.3', new URL('file:///a/b/c'), { host, extensions: ['.bare'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/d/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///a/b/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///a/prebuilds/${host}/d@1.2.3.bare`,
+    `file:///prebuilds/${host}/d@1.2.3.bare`
+  ])
+})
+
+test('versioned bare specifier, pkg.name + pkg.version, version mismatch', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.4', new URL('file:///a/b/c'), { host, extensions: ['.bare'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
 test('relative specifier, pkg.name', (t) => {
   function readPackage (url) {
     if (url.href === 'file:///a/b/d/package.json') {
@@ -232,7 +306,7 @@ test('absolute specifier, Windows path with drive letter', (t) => {
   ])
 })
 
-test('builtin, pkg.name', (t) => {
+test('builtin, relative specifier, pkg.name', (t) => {
   function readPackage (url) {
     if (url.href === 'file:///a/b/d/package.json') {
       return {
@@ -252,7 +326,48 @@ test('builtin, pkg.name', (t) => {
   t.alike(result, ['builtin:e'])
 })
 
-test('builtin, pkg.name + pkg.version', (t) => {
+test('builtin, relative specifier, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, relative specifier, pkg.name', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, relative specifier, pkg.name + pkg.version', (t) => {
   function readPackage (url) {
     if (url.href === 'file:///a/b/d/package.json') {
       return {
@@ -271,6 +386,27 @@ test('builtin, pkg.name + pkg.version', (t) => {
   }
 
   t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, relative specifier, pkg.name + pkg.version, version mismatch', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('./d', new URL('file:///a/b/c'), { builtins: ['e@1.2.4'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
 })
 
 test('builtin, bare specifier, pkg.name', (t) => {
@@ -314,7 +450,48 @@ test('builtin, bare specifier, pkg.name + pkg.version', (t) => {
   t.alike(result, ['builtin:e@1.2.3'])
 })
 
-test('builtin, bare specifier, pkg.name + pkg.version, version mismatch', (t) => {
+test('versioned builtin, bare specifier, pkg.name', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, bare specifier, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, bare specifier, pkg.name + pkg.version, version mismatch', (t) => {
   function readPackage (url) {
     if (url.href === 'file:///a/b/node_modules/d/package.json') {
       return {
@@ -329,6 +506,150 @@ test('builtin, bare specifier, pkg.name + pkg.version, version mismatch', (t) =>
   const result = []
 
   for (const resolution of resolve('d', new URL('file:///a/b/c'), { builtins: ['e@1.2.4'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('builtin, versioned bare specifier, pkg.name', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.3', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('builtin, versioned bare specifier, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.3', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('builtin, versioned bare specifier, pkg.name + pkg.version, version mismatch', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.4', new URL('file:///a/b/c'), { builtins: ['e'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('versioned builtin, versioned bare specifier, pkg.name', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.3', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, versioned bare specifier, pkg.name + pkg.version', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.3', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('versioned builtin, versioned bare specifier, pkg.name, version mismatch', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.4', new URL('file:///a/b/c'), { builtins: ['e@1.2.3'] }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('versioned builtin, versioned bare specifier, pkg.name + pkg.version, version mismatch', (t) => {
+  function readPackage (url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d@1.2.4', new URL('file:///a/b/c'), { builtins: ['e@1.2.4'] }, readPackage)) {
     result.push(resolution.href)
   }
 

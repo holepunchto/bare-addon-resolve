@@ -67,19 +67,45 @@ exports.addon = function * (specifier, parentURL, opts = {}) {
     }
   }
 
-  if (specifier === '.' || specifier === '..' || specifier[0] === '/' || specifier[0] === '\\' || specifier.startsWith('./') || specifier.startsWith('.\\') || specifier.startsWith('../') || specifier.startsWith('..\\')) {
-    return yield * exports.directory(specifier, parentURL, opts)
+  if (yield * exports.url(specifier, parentURL, opts)) {
+    return true
   }
 
-  return yield * exports.package(specifier, parentURL, opts)
+  let version = null
+
+  const i = specifier.lastIndexOf('@')
+
+  if (i > 0) {
+    version = specifier.substring(i + 1)
+    specifier = specifier.substring(0, i)
+  }
+
+  if (specifier === '.' || specifier === '..' || specifier[0] === '/' || specifier[0] === '\\' || specifier.startsWith('./') || specifier.startsWith('.\\') || specifier.startsWith('../') || specifier.startsWith('..\\')) {
+    return yield * exports.directory(specifier, version, parentURL, opts)
+  }
+
+  return yield * exports.package(specifier, version, parentURL, opts)
 }
 
-exports.package = function * (packageSpecifier, parentURL, opts = {}) {
-  let packageName
+exports.url = function * (url, parentURL, opts = {}) {
+  let resolution
+  try {
+    resolution = new URL(url)
+  } catch {
+    return false
+  }
 
+  yield { resolution }
+
+  return true
+}
+
+exports.package = function * (packageSpecifier, packageVersion, parentURL, opts = {}) {
   if (packageSpecifier === '') {
     throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
   }
+
+  let packageName
 
   if (packageSpecifier[0] !== '@') {
     packageName = packageSpecifier.split('/', 1).join()
@@ -97,7 +123,7 @@ exports.package = function * (packageSpecifier, parentURL, opts = {}) {
 
   const packageSubpath = '.' + packageSpecifier.substring(packageName.length)
 
-  if (yield * exports.packageSelf(packageName, packageSubpath, parentURL, opts)) {
+  if (yield * exports.packageSelf(packageName, packageSubpath, packageVersion, parentURL, opts)) {
     return true
   }
 
@@ -111,20 +137,20 @@ exports.package = function * (packageSpecifier, parentURL, opts = {}) {
     const info = yield { package: new URL('package.json', packageURL) }
 
     if (info) {
-      return yield * exports.directory(packageSubpath, packageURL, opts)
+      return yield * exports.directory(packageSubpath, packageVersion, packageURL, opts)
     }
   } while (parentURL.pathname !== '' && parentURL.pathname !== '/')
 
   return false
 }
 
-exports.packageSelf = function * (packageName, packageSubpath, parentURL, opts = {}) {
+exports.packageSelf = function * (packageName, packageSubpath, packageVersion, parentURL, opts = {}) {
   for (const packageURL of resolve.lookupPackageScope(parentURL, opts)) {
     const info = yield { package: packageURL }
 
     if (info) {
       if (info.name === packageName) {
-        return yield * exports.directory(packageSubpath, packageURL, opts)
+        return yield * exports.directory(packageSubpath, packageVersion, packageURL, opts)
       }
 
       break
@@ -170,7 +196,7 @@ exports.file = function * (filename, parentURL, opts = {}) {
   return extensions.length > 0
 }
 
-exports.directory = function * (dirname, parentURL, opts = {}) {
+exports.directory = function * (dirname, version, parentURL, opts = {}) {
   const { resolutions = null, builtins = [] } = opts
 
   let directoryURL
@@ -189,8 +215,9 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
     }
   }
 
+  const unversioned = version === null
+
   let name = null
-  let version = null
 
   const info = yield { package: new URL('package.json', directoryURL) }
 
@@ -202,6 +229,8 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
     }
 
     if (typeof info.version === 'string' && info.version !== '') {
+      if (version !== null && info.version !== version) return false
+
       version = info.version
     }
   } else {
@@ -221,8 +250,10 @@ exports.directory = function * (dirname, parentURL, opts = {}) {
       }
     }
 
-    if (yield * exports.file(name, prebuildsURL, opts)) {
-      yielded = true
+    if (unversioned) {
+      if (yield * exports.file(name, prebuildsURL, opts)) {
+        yielded = true
+      }
     }
   }
 

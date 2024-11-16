@@ -46,12 +46,6 @@ Options include:
 
 ```js
 {
-  // The name of the addon. If `null`, it will instead be read from the
-  // resolved `package.json`.
-  name: null,
-  // The version of the addon. If `null`, it will instead be read from the
-  // resolved `package.json`.
-  version: null,
   // A list of builtin addon specifiers. If matched, the protocol of the
   // resolved URL will be `builtinProtocol`.
   builtins: [],
@@ -112,13 +106,15 @@ Options are the same as `resolve()` for all functions.
 
 #### `const generator = resolve.addon(specifier, parentURL[, options])`
 
-#### `const generator = resolve.package(packageSpecifier, parentURL[, options])`
+#### `const generator = resolve.package(packageSpecifier, packageVersion, parentURL[, options])`
+
+#### `const generator = resolve.packageSelf(packageName, packageSubpath, packageVersion, parentURL[, options])`
 
 #### `const generator = resolve.preresolved(directoryURL, resolutions[, options])`
 
 #### `const generator = resolve.file(filename, parentURL[, options])`
 
-#### `const generator = resolve.directory(dirname, parentURL[, options])`
+#### `const generator = resolve.directory(dirname, version, parentURL[, options])`
 
 #### `const generator = resolve.linked(name, version[, options])`
 

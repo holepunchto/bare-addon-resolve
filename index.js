@@ -1,7 +1,12 @@
 const resolve = require('bare-module-resolve')
 const errors = require('./lib/errors')
 
-module.exports = exports = function resolve (specifier, parentURL, opts, readPackage) {
+module.exports = exports = function resolve(
+  specifier,
+  parentURL,
+  opts,
+  readPackage
+) {
   if (typeof opts === 'function') {
     readPackage = opts
     opts = {}
@@ -10,7 +15,7 @@ module.exports = exports = function resolve (specifier, parentURL, opts, readPac
   }
 
   return {
-    * [Symbol.iterator] () {
+    *[Symbol.iterator]() {
       const generator = exports.addon(specifier, parentURL, opts)
 
       let next = generator.next()
@@ -29,7 +34,7 @@ module.exports = exports = function resolve (specifier, parentURL, opts, readPac
       return next.value
     },
 
-    async * [Symbol.asyncIterator] () {
+    async *[Symbol.asyncIterator]() {
       const generator = exports.addon(specifier, parentURL, opts)
 
       let next = generator.next()
@@ -50,11 +55,11 @@ module.exports = exports = function resolve (specifier, parentURL, opts, readPac
   }
 }
 
-function defaultReadPackage () {
+function defaultReadPackage() {
   return null
 }
 
-exports.addon = function * (specifier, parentURL, opts = {}) {
+exports.addon = function* (specifier, parentURL, opts = {}) {
   const { resolutions = null } = opts
 
   if (exports.startsWithWindowsDriveLetter(specifier)) {
@@ -62,12 +67,12 @@ exports.addon = function * (specifier, parentURL, opts = {}) {
   }
 
   if (resolutions) {
-    if (yield * resolve.preresolved(specifier, resolutions, parentURL, opts)) {
+    if (yield* resolve.preresolved(specifier, resolutions, parentURL, opts)) {
       return true
     }
   }
 
-  if (yield * exports.url(specifier, parentURL, opts)) {
+  if (yield* exports.url(specifier, parentURL, opts)) {
     return true
   }
 
@@ -80,14 +85,23 @@ exports.addon = function * (specifier, parentURL, opts = {}) {
     specifier = specifier.substring(0, i)
   }
 
-  if (specifier === '.' || specifier === '..' || specifier[0] === '/' || specifier[0] === '\\' || specifier.startsWith('./') || specifier.startsWith('.\\') || specifier.startsWith('../') || specifier.startsWith('..\\')) {
-    return yield * exports.directory(specifier, version, parentURL, opts)
+  if (
+    specifier === '.' ||
+    specifier === '..' ||
+    specifier[0] === '/' ||
+    specifier[0] === '\\' ||
+    specifier.startsWith('./') ||
+    specifier.startsWith('.\\') ||
+    specifier.startsWith('../') ||
+    specifier.startsWith('..\\')
+  ) {
+    return yield* exports.directory(specifier, version, parentURL, opts)
   }
 
-  return yield * exports.package(specifier, version, parentURL, opts)
+  return yield* exports.package(specifier, version, parentURL, opts)
 }
 
-exports.url = function * (url, parentURL, opts = {}) {
+exports.url = function* (url, parentURL, opts = {}) {
   let resolution
   try {
     resolution = new URL(url)
@@ -100,9 +114,16 @@ exports.url = function * (url, parentURL, opts = {}) {
   return true
 }
 
-exports.package = function * (packageSpecifier, packageVersion, parentURL, opts = {}) {
+exports.package = function* (
+  packageSpecifier,
+  packageVersion,
+  parentURL,
+  opts = {}
+) {
   if (packageSpecifier === '') {
-    throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
+    throw errors.INVALID_ADDON_SPECIFIER(
+      `Addon specifier '${packageSpecifier}' is not a valid package name`
+    )
   }
 
   let packageName
@@ -111,19 +132,35 @@ exports.package = function * (packageSpecifier, packageVersion, parentURL, opts 
     packageName = packageSpecifier.split('/', 1).join()
   } else {
     if (!packageSpecifier.includes('/')) {
-      throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
+      throw errors.INVALID_ADDON_SPECIFIER(
+        `Addon specifier '${packageSpecifier}' is not a valid package name`
+      )
     }
 
     packageName = packageSpecifier.split('/', 2).join('/')
   }
 
-  if (packageName[0] === '.' || packageName.includes('\\') || packageName.includes('%')) {
-    throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${packageSpecifier}' is not a valid package name`)
+  if (
+    packageName[0] === '.' ||
+    packageName.includes('\\') ||
+    packageName.includes('%')
+  ) {
+    throw errors.INVALID_ADDON_SPECIFIER(
+      `Addon specifier '${packageSpecifier}' is not a valid package name`
+    )
   }
 
   const packageSubpath = '.' + packageSpecifier.substring(packageName.length)
 
-  if (yield * exports.packageSelf(packageName, packageSubpath, packageVersion, parentURL, opts)) {
+  if (
+    yield* exports.packageSelf(
+      packageName,
+      packageSubpath,
+      packageVersion,
+      parentURL,
+      opts
+    )
+  ) {
     return true
   }
 
@@ -132,25 +169,44 @@ exports.package = function * (packageSpecifier, packageVersion, parentURL, opts 
   do {
     const packageURL = new URL('node_modules/' + packageName + '/', parentURL)
 
-    parentURL.pathname = parentURL.pathname.substring(0, parentURL.pathname.lastIndexOf('/'))
+    parentURL.pathname = parentURL.pathname.substring(
+      0,
+      parentURL.pathname.lastIndexOf('/')
+    )
 
     const info = yield { package: new URL('package.json', packageURL) }
 
     if (info) {
-      return yield * exports.directory(packageSubpath, packageVersion, packageURL, opts)
+      return yield* exports.directory(
+        packageSubpath,
+        packageVersion,
+        packageURL,
+        opts
+      )
     }
   } while (parentURL.pathname !== '' && parentURL.pathname !== '/')
 
   return false
 }
 
-exports.packageSelf = function * (packageName, packageSubpath, packageVersion, parentURL, opts = {}) {
+exports.packageSelf = function* (
+  packageName,
+  packageSubpath,
+  packageVersion,
+  parentURL,
+  opts = {}
+) {
   for (const packageURL of resolve.lookupPackageScope(parentURL, opts)) {
     const info = yield { package: packageURL }
 
     if (info) {
       if (info.name === packageName) {
-        return yield * exports.directory(packageSubpath, packageVersion, packageURL, opts)
+        return yield* exports.directory(
+          packageSubpath,
+          packageVersion,
+          packageURL,
+          opts
+        )
       }
 
       break
@@ -160,11 +216,16 @@ exports.packageSelf = function * (packageName, packageSubpath, packageVersion, p
   return false
 }
 
-exports.lookupPrebuildsScope = function * lookupPrebuildsScope (url, opts = {}) {
+exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
   const { resolutions = null, host = null } = opts
 
   if (resolutions) {
-    for (const { resolution } of resolve.preresolved('#prebuilds', resolutions, url, opts)) {
+    for (const { resolution } of resolve.preresolved(
+      '#prebuilds',
+      resolutions,
+      url,
+      opts
+    )) {
       if (resolution) return yield resolution
     }
   }
@@ -176,15 +237,24 @@ exports.lookupPrebuildsScope = function * lookupPrebuildsScope (url, opts = {}) 
   do {
     yield new URL('prebuilds/' + host + '/', scopeURL)
 
-    scopeURL.pathname = scopeURL.pathname.substring(0, scopeURL.pathname.lastIndexOf('/'))
+    scopeURL.pathname = scopeURL.pathname.substring(
+      0,
+      scopeURL.pathname.lastIndexOf('/')
+    )
 
-    if (scopeURL.pathname.length === 3 && exports.isWindowsDriveLetter(scopeURL.pathname.substring(1))) break
+    if (
+      scopeURL.pathname.length === 3 &&
+      exports.isWindowsDriveLetter(scopeURL.pathname.substring(1))
+    )
+      break
   } while (scopeURL.pathname !== '' && scopeURL.pathname !== '/')
 }
 
-exports.file = function * (filename, parentURL, opts = {}) {
+exports.file = function* (filename, parentURL, opts = {}) {
   if (parentURL.protocol === 'file:' && /%2f|%5c/i.test(filename)) {
-    throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${filename}' is invalid`)
+    throw errors.INVALID_ADDON_SPECIFIER(
+      `Addon specifier '${filename}' is invalid`
+    )
   }
 
   const { extensions = [] } = opts
@@ -196,12 +266,15 @@ exports.file = function * (filename, parentURL, opts = {}) {
   return extensions.length > 0
 }
 
-exports.directory = function * (dirname, version, parentURL, opts = {}) {
+exports.directory = function* (dirname, version, parentURL, opts = {}) {
   const { resolutions = null, builtins = [] } = opts
 
   let directoryURL
 
-  if (dirname[dirname.length - 1] === '/' || dirname[dirname.length - 1] === '\\') {
+  if (
+    dirname[dirname.length - 1] === '/' ||
+    dirname[dirname.length - 1] === '\\'
+  ) {
     directoryURL = new URL(dirname, parentURL)
   } else {
     directoryURL = new URL(dirname + '/', parentURL)
@@ -210,7 +283,9 @@ exports.directory = function * (dirname, version, parentURL, opts = {}) {
   // Internal preresolution path, do not depend on this! It will be removed without
   // warning.
   if (resolutions) {
-    if (yield * resolve.preresolved('bare:addon', resolutions, directoryURL, opts)) {
+    if (
+      yield* resolve.preresolved('bare:addon', resolutions, directoryURL, opts)
+    ) {
       return true
     }
   }
@@ -237,7 +312,7 @@ exports.directory = function * (dirname, version, parentURL, opts = {}) {
     return false
   }
 
-  if (yield * resolve.builtinTarget(name, version, builtins, opts)) {
+  if (yield* resolve.builtinTarget(name, version, builtins, opts)) {
     return true
   }
 
@@ -245,34 +320,49 @@ exports.directory = function * (dirname, version, parentURL, opts = {}) {
 
   for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
     if (version !== null) {
-      if (yield * exports.file(name + '@' + version, prebuildsURL, opts)) {
+      if (yield* exports.file(name + '@' + version, prebuildsURL, opts)) {
         yielded = true
       }
     }
 
     if (unversioned) {
-      if (yield * exports.file(name, prebuildsURL, opts)) {
+      if (yield* exports.file(name, prebuildsURL, opts)) {
         yielded = true
       }
     }
   }
 
-  if (yield * exports.linked(name, version, opts)) {
+  if (yield* exports.linked(name, version, opts)) {
     yielded = true
   }
 
   return yielded
 }
 
-exports.linked = function * (name, version = null, opts = {}) {
+exports.linked = function* (name, version = null, opts = {}) {
   const { linked = true, linkedProtocol = 'linked:', host = null } = opts
 
   if (linked === false || host === null) return false
 
   if (host.startsWith('darwin-')) {
     if (version !== null) {
-      yield { resolution: new URL(linkedProtocol + 'lib' + name + '.' + version + '.dylib') }
-      yield { resolution: new URL(linkedProtocol + name + '.' + version + '.framework/' + name + '.' + version) }
+      yield {
+        resolution: new URL(
+          linkedProtocol + 'lib' + name + '.' + version + '.dylib'
+        )
+      }
+      yield {
+        resolution: new URL(
+          linkedProtocol +
+            name +
+            '.' +
+            version +
+            '.framework/' +
+            name +
+            '.' +
+            version
+        )
+      }
     }
 
     yield { resolution: new URL(linkedProtocol + 'lib' + name + '.dylib') }
@@ -283,7 +373,18 @@ exports.linked = function * (name, version = null, opts = {}) {
 
   if (host.startsWith('ios-')) {
     if (version !== null) {
-      yield { resolution: new URL(linkedProtocol + name + '.' + version + '.framework/' + name + '.' + version) }
+      yield {
+        resolution: new URL(
+          linkedProtocol +
+            name +
+            '.' +
+            version +
+            '.framework/' +
+            name +
+            '.' +
+            version
+        )
+      }
     }
 
     yield { resolution: new URL(linkedProtocol + name + '.framework/' + name) }
@@ -293,7 +394,11 @@ exports.linked = function * (name, version = null, opts = {}) {
 
   if (host.startsWith('linux-') || host.startsWith('android-')) {
     if (version !== null) {
-      yield { resolution: new URL(linkedProtocol + 'lib' + name + '.' + version + '.so') }
+      yield {
+        resolution: new URL(
+          linkedProtocol + 'lib' + name + '.' + version + '.so'
+        )
+      }
     }
 
     yield { resolution: new URL(linkedProtocol + 'lib' + name + '.so') }
@@ -303,7 +408,9 @@ exports.linked = function * (name, version = null, opts = {}) {
 
   if (host.startsWith('win32-')) {
     if (version !== null) {
-      yield { resolution: new URL(linkedProtocol + name + '-' + version + '.dll') }
+      yield {
+        resolution: new URL(linkedProtocol + name + '-' + version + '.dll')
+      }
     }
 
     yield { resolution: new URL(linkedProtocol + name + '.dll') }

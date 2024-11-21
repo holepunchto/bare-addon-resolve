@@ -10,28 +10,36 @@ npm i bare-addon-resolve
 
 For synchronous resolution:
 
-``` js
+```js
 const resolve = require('bare-addon-resolve')
 
-function readPackage (url) {
+function readPackage(url) {
   // Read and parse `url` if it exists, otherwise `null`
 }
 
-for (const resolution of resolve('./addon', new URL('file:///directory/'), readPackage)) {
+for (const resolution of resolve(
+  './addon',
+  new URL('file:///directory/'),
+  readPackage
+)) {
   console.log(resolution)
 }
 ```
 
 For asynchronous resolution:
 
-``` js
+```js
 const resolve = require('bare-addon-resolve')
 
-async function readPackage (url) {
+async function readPackage(url) {
   // Read and parse `url` if it exists, otherwise `null`
 }
 
-for await (const resolution of resolve('./addon', new URL('file:///directory/'), readPackage)) {
+for await (const resolution of resolve(
+  './addon',
+  new URL('file:///directory/'),
+  readPackage
+)) {
   console.log(resolution)
 }
 ```

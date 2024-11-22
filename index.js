@@ -1,6 +1,6 @@
 const resolve = require('bare-module-resolve')
+const { Version } = require('bare-semver')
 const errors = require('./lib/errors')
-const semver = require('./lib/semver')
 
 module.exports = exports = function resolve(
   specifier,
@@ -79,11 +79,18 @@ exports.addon = function* (specifier, parentURL, opts = {}) {
 
   let version = null
 
-  const match = specifier.match(semver)
+  const i = specifier.lastIndexOf('@')
 
-  if (match !== null) {
-    version = match[0].substring(1)
-    specifier = specifier.substring(0, specifier.length - (version.length + 1))
+  if (i > 0) {
+    version = specifier.substring(i + 1)
+
+    try {
+      Version.parse(version)
+
+      specifier = specifier.substring(0, i)
+    } catch {
+      version = null
+    }
   }
 
   if (

@@ -160,6 +160,38 @@ test('versioned bare specifier, pkg.name + pkg.version, version mismatch', (t) =
   t.alike(result, [])
 })
 
+test('bare specifier with scope and no version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/@d/e/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    '@d/e',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/e.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/e.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/e.bare`,
+    `file:///a/b/prebuilds/${host}/e.bare`,
+    `file:///a/prebuilds/${host}/e.bare`,
+    `file:///prebuilds/${host}/e.bare`
+  ])
+})
+
 test('relative specifier, pkg.name', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/d/package.json') {
@@ -279,6 +311,37 @@ test('relative specifier, parent directory', (t) => {
   t.alike(result, [
     `file:///a/prebuilds/${host}/d.bare`,
     `file:///prebuilds/${host}/d.bare`
+  ])
+})
+
+test('relative specifier with scope and no version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/@d/e/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    './@d/e',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/@d/e/prebuilds/${host}/e.bare`,
+    `file:///a/b/@d/prebuilds/${host}/e.bare`,
+    `file:///a/b/prebuilds/${host}/e.bare`,
+    `file:///a/prebuilds/${host}/e.bare`,
+    `file:///prebuilds/${host}/e.bare`
   ])
 })
 

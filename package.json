@@ -25,7 +25,8 @@
   },
   "homepage": "https://github.com/holepunchto/bare-addon-resolve#readme",
   "dependencies": {
-    "bare-module-resolve": "^1.8.2"
+    "bare-module-resolve": "^1.8.2",
+    "bare-semver": "^1.0.0"
   },
   "devDependencies": {
     "brittle": "^3.2.1",

@@ -53,7 +53,7 @@ Resolve `specifier` relative to `parentURL`, which must be a WHATWG `URL` instan
 Options include:
 
 ```js
-{
+options = {
   // A list of builtin addon specifiers. If matched, the protocol of the
   // resolved URL will be `builtinProtocol`.
   builtins: [],

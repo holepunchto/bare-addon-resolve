@@ -63,10 +63,15 @@ Options include:
   linked: true,
   // The protocol to use for addons linked ahead-of-time.
   linkedProtocol: 'linked:',
-  // The `<platform>-<arch>` combination to look for when resolving dynamic
-  // addons. If `null`, only builtin specifiers can be resolved. In Bare,
-  // pass `Bare.Addon.host`.
-  host: null,
+  // The supported import conditions. "default" is always recognized.
+  conditions: [],
+  // An array reference which will contain the matched conditions when yielding
+  // resolutions.
+  matchedConditions: [],
+  // The `<platform>-<arch>` combinations to look for when resolving dynamic
+  // addons. If empty, only builtin specifiers can be resolved. In Bare,
+  // pass `[Bare.Addon.host]`.
+  hosts: [],
   // The file extensions to look for when resolving dynamic addons.
   extensions: [],
   // A map of preresolved imports with keys being serialized directory URLs and

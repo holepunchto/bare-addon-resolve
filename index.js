@@ -225,7 +225,7 @@ exports.packageSelf = function* (
 }
 
 exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
-  const { resolutions = null, host = null } = opts
+  const { resolutions = null } = opts
 
   if (resolutions) {
     for (const { resolution } of resolve.preresolved(
@@ -238,12 +238,10 @@ exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
     }
   }
 
-  if (host === null) return
-
   const scopeURL = new URL(url.href)
 
   do {
-    yield new URL('prebuilds/' + host + '/', scopeURL)
+    yield new URL('prebuilds/', scopeURL)
 
     scopeURL.pathname = scopeURL.pathname.substring(
       0,
@@ -275,7 +273,13 @@ exports.file = function* (filename, parentURL, opts = {}) {
 }
 
 exports.directory = function* (dirname, version, parentURL, opts = {}) {
-  const { resolutions = null, builtins = [] } = opts
+  const {
+    resolutions = null,
+    host = null, // Shorthand for single host resolution
+    hosts = host !== null ? [host] : [],
+    builtins = [],
+    matchedConditions = []
+  } = opts
 
   let directoryURL
 
@@ -327,16 +331,30 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
   let yielded = false
 
   for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
-    if (version !== null) {
-      if (yield* exports.file(name + '@' + version, prebuildsURL, opts)) {
-        yielded = true
-      }
-    }
+    for (const host of hosts) {
+      const conditions = host.split('-')
 
-    if (unversioned) {
-      if (yield* exports.file(name, prebuildsURL, opts)) {
-        yielded = true
+      matchedConditions.push(...conditions)
+
+      if (version !== null) {
+        if (
+          yield* exports.file(
+            host + '/' + name + '@' + version,
+            prebuildsURL,
+            opts
+          )
+        ) {
+          yielded = true
+        }
       }
+
+      if (unversioned) {
+        if (yield* exports.file(host + '/' + name, prebuildsURL, opts)) {
+          yielded = true
+        }
+      }
+
+      for (const _ of conditions) matchedConditions.pop()
     }
   }
 
@@ -348,85 +366,81 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
 }
 
 exports.linked = function* (name, version = null, opts = {}) {
-  const { linked = true, linkedProtocol = 'linked:', host = null } = opts
+  const {
+    linked = true,
+    linkedProtocol = 'linked:',
+    host = null, // Shorthand for single host resolution
+    hosts = host !== null ? [host] : [],
+    matchedConditions = []
+  } = opts
 
-  if (linked === false || host === null) return false
+  if (linked === false || hosts.length === 0) return false
 
-  if (host.startsWith('darwin-')) {
-    if (version !== null) {
-      yield {
-        resolution: new URL(
-          linkedProtocol + 'lib' + name + '.' + version + '.dylib'
-        )
+  let yielded = false
+
+  for (const host of hosts) {
+    const [platform = null] = host.split('-', 1)
+
+    if (platform === null) continue
+
+    matchedConditions.push(platform)
+
+    if (platform === 'darwin' || platform === 'ios') {
+      if (version !== null) {
+        if (platform === 'darwin') {
+          yield {
+            resolution: new URL(`${linkedProtocol}lib${name}.${version}.dylib`)
+          }
+        }
+
+        yield {
+          resolution: new URL(
+            `${linkedProtocol}${name}.${version}.framework/${name}.${version}`
+          )
+        }
       }
-      yield {
-        resolution: new URL(
-          linkedProtocol +
-            name +
-            '.' +
-            version +
-            '.framework/' +
-            name +
-            '.' +
-            version
-        )
+
+      if (platform === 'darwin') {
+        yield {
+          resolution: new URL(`${linkedProtocol}lib${name}.dylib`)
+        }
       }
+
+      yield {
+        resolution: new URL(`${linkedProtocol}${name}.framework/${name}`)
+      }
+
+      yielded = true
+    } else if (platform === 'linux' || platform === 'android') {
+      if (version !== null) {
+        yield {
+          resolution: new URL(`${linkedProtocol}lib${name}.${version}.so`)
+        }
+      }
+
+      yield {
+        resolution: new URL(`${linkedProtocol}lib${name}.so`)
+      }
+
+      yielded = true
+    } else if (platform === 'win32') {
+      if (version !== null) {
+        yield {
+          resolution: new URL(`${linkedProtocol}${name}-${version}.dll`)
+        }
+      }
+
+      yield {
+        resolution: new URL(`${linkedProtocol}${name}.dll`)
+      }
+
+      yielded = true
     }
 
-    yield { resolution: new URL(linkedProtocol + 'lib' + name + '.dylib') }
-    yield { resolution: new URL(linkedProtocol + name + '.framework/' + name) }
-
-    return true
+    matchedConditions.pop()
   }
 
-  if (host.startsWith('ios-')) {
-    if (version !== null) {
-      yield {
-        resolution: new URL(
-          linkedProtocol +
-            name +
-            '.' +
-            version +
-            '.framework/' +
-            name +
-            '.' +
-            version
-        )
-      }
-    }
-
-    yield { resolution: new URL(linkedProtocol + name + '.framework/' + name) }
-
-    return true
-  }
-
-  if (host.startsWith('linux-') || host.startsWith('android-')) {
-    if (version !== null) {
-      yield {
-        resolution: new URL(
-          linkedProtocol + 'lib' + name + '.' + version + '.so'
-        )
-      }
-    }
-
-    yield { resolution: new URL(linkedProtocol + 'lib' + name + '.so') }
-
-    return true
-  }
-
-  if (host.startsWith('win32-')) {
-    if (version !== null) {
-      yield {
-        resolution: new URL(linkedProtocol + name + '-' + version + '.dll')
-      }
-    }
-
-    yield { resolution: new URL(linkedProtocol + name + '.dll') }
-
-    return true
-  }
-
-  return false
+  return yielded
 }
 
 exports.isWindowsDriveLetter = resolve.isWindowsDriveLetter

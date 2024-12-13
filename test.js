@@ -71,6 +71,77 @@ test('bare specifier, pkg.name + pkg.version', (t) => {
   ])
 })
 
+test('bare specifier, scoped pkg.name', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/@d/e/package.json') {
+      return {
+        name: '@d/e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    '@d/e',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d+e.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d+e.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d+e.bare`,
+    `file:///a/b/prebuilds/${host}/d+e.bare`,
+    `file:///a/prebuilds/${host}/d+e.bare`,
+    `file:///prebuilds/${host}/d+e.bare`
+  ])
+})
+
+test('bare specifier, scoped pkg.name + pkg.version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/@d/e/package.json') {
+      return {
+        name: '@d/e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    '@d/e',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d+e@1.2.3.bare`,
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d+e.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d+e@1.2.3.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d+e.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d+e@1.2.3.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d+e.bare`,
+    `file:///a/b/prebuilds/${host}/d+e@1.2.3.bare`,
+    `file:///a/b/prebuilds/${host}/d+e.bare`,
+    `file:///a/prebuilds/${host}/d+e@1.2.3.bare`,
+    `file:///a/prebuilds/${host}/d+e.bare`,
+    `file:///prebuilds/${host}/d+e@1.2.3.bare`,
+    `file:///prebuilds/${host}/d+e.bare`
+  ])
+})
+
 test('versioned bare specifier, pkg.name', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/node_modules/d/package.json') {

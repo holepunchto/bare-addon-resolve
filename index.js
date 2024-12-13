@@ -306,7 +306,7 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
 
   if (info) {
     if (typeof info.name === 'string' && info.name !== '') {
-      name = info.name.replace(/\//g, '+')
+      name = info.name.replace(/\//g, '+').replace(/^@/, '')
     } else {
       return false
     }

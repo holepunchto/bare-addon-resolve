@@ -1197,10 +1197,88 @@ test('linked module, win32', (t) => {
   t.alike(result, ['linked:e-1.2.3.dll', 'linked:e.dll'])
 })
 
+test('multiple hosts, bare specifier', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const matched = []
+  const result = []
+
+  for (const resolution of resolve(
+    'd',
+    new URL('file:///a/b/c'),
+    {
+      hosts: ['host-foo', 'host-bar'],
+      extensions: ['.bare'],
+      matchedConditions: matched
+    },
+    readPackage
+  )) {
+    result.push([resolution.href, [...matched]])
+  }
+
+  t.alike(result, [
+    [`file:///a/b/node_modules/d/prebuilds/host-foo/d.bare`, ['host', 'foo']],
+    [`file:///a/b/node_modules/d/prebuilds/host-bar/d.bare`, ['host', 'bar']],
+    [`file:///a/b/node_modules/prebuilds/host-foo/d.bare`, ['host', 'foo']],
+    [`file:///a/b/node_modules/prebuilds/host-bar/d.bare`, ['host', 'bar']],
+    [`file:///a/b/prebuilds/host-foo/d.bare`, ['host', 'foo']],
+    [`file:///a/b/prebuilds/host-bar/d.bare`, ['host', 'bar']],
+    [`file:///a/prebuilds/host-foo/d.bare`, ['host', 'foo']],
+    [`file:///a/prebuilds/host-bar/d.bare`, ['host', 'bar']],
+    [`file:///prebuilds/host-foo/d.bare`, ['host', 'foo']],
+    [`file:///prebuilds/host-bar/d.bare`, ['host', 'bar']]
+  ])
+})
+
+test('multiple hosts, linked module', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const matched = []
+  const result = []
+
+  for (const resolution of resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    {
+      hosts: ['darwin-x64', 'linux-arm64'],
+      matchedConditions: matched
+    },
+    readPackage
+  )) {
+    result.push([resolution.href, [...matched]])
+  }
+
+  t.alike(result, [
+    ['linked:libe.1.2.3.dylib', ['darwin']],
+    ['linked:e.1.2.3.framework/e.1.2.3', ['darwin']],
+    ['linked:libe.dylib', ['darwin']],
+    ['linked:e.framework/e', ['darwin']],
+    ['linked:libe.1.2.3.so', ['linux']],
+    ['linked:libe.so', ['linux']]
+  ])
+})
+
 test('prebuilds scope lookup with resolutions map', (t) => {
   const resolutions = {
     'file:///a/b/': {
-      '#prebuilds': 'file:///a/prebuilds/' + host + '/'
+      '#prebuilds': 'file:///a/prebuilds/'
     }
   }
 
@@ -1212,29 +1290,25 @@ test('prebuilds scope lookup with resolutions map', (t) => {
     result.push(scope.href)
   }
 
-  t.alike(result, ['file:///a/prebuilds/' + host + '/'])
+  t.alike(result, ['file:///a/prebuilds/'])
 })
 
 test('prebuilds scope lookup with root file: URL', (t) => {
   const result = []
 
-  for (const scope of resolve.lookupPrebuildsScope(new URL('file:///'), {
-    host
-  })) {
+  for (const scope of resolve.lookupPrebuildsScope(new URL('file:///'))) {
     result.push(scope.href)
   }
 
-  t.alike(result, ['file:///prebuilds/' + host + '/'])
+  t.alike(result, ['file:///prebuilds/'])
 })
 
 test('prebuilds scope lookup with root non-file: URL', (t) => {
   const result = []
 
-  for (const scope of resolve.lookupPrebuildsScope(new URL('drive:///'), {
-    host
-  })) {
+  for (const scope of resolve.lookupPrebuildsScope(new URL('drive:///'))) {
     result.push(scope.href)
   }
 
-  t.alike(result, ['drive:///prebuilds/' + host + '/'])
+  t.alike(result, ['drive:///prebuilds/'])
 })

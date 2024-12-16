@@ -1082,10 +1082,10 @@ test('linked module, darwin', (t) => {
   }
 
   t.alike(result, [
-    'linked:libe.1.2.3.dylib',
     'linked:e.1.2.3.framework/e.1.2.3',
-    'linked:libe.dylib',
-    'linked:e.framework/e'
+    'linked:libe.1.2.3.dylib',
+    'linked:e.framework/e',
+    'linked:libe.dylib'
   ])
 })
 
@@ -1266,10 +1266,10 @@ test('multiple hosts, linked module', (t) => {
   }
 
   t.alike(result, [
-    ['linked:libe.1.2.3.dylib', ['darwin']],
     ['linked:e.1.2.3.framework/e.1.2.3', ['darwin']],
-    ['linked:libe.dylib', ['darwin']],
+    ['linked:libe.1.2.3.dylib', ['darwin']],
     ['linked:e.framework/e', ['darwin']],
+    ['linked:libe.dylib', ['darwin']],
     ['linked:libe.1.2.3.so', ['linux']],
     ['linked:libe.so', ['linux']]
   ])

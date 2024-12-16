@@ -90,7 +90,29 @@ Asynchronously iterate the addon resolution candidates. If `readPackage` returns
 
 ### Algorithm
 
-The following generator functions implement the resolution algorithm. To drive the generator functions, a loop like the following can be used:
+The following generator functions implement the resolution algorithm. The yielded values have the following shape:
+
+**Package manifest**
+
+```js
+next.value = {
+  package: URL
+}
+```
+
+If the package manifest identified by `next.value.package` exists, `generator.next()` must be passed the parsed JSON value of the manifest. If it does not exist, pass `null` instead.
+
+**Resolution candidate**
+
+```js
+next.value = {
+  resolution: URL
+}
+```
+
+If the addon identified by `next.value.resolution` exists, `generator.next()` may be passed `true` to signal that the resolution for the current set of conditions has been identified. If it does not exist, pass `false` instead.
+
+To drive the generator functions, a loop like the following can be used:
 
 ```js
 const generator = resolve.addon(specifier, parentURL)
@@ -101,13 +123,17 @@ while (next.done !== true) {
   const value = next.value
 
   if (value.package) {
-    const info = /* Read and parse `value.package` if it exists, otherwise `null` */;
+    // Read and parse `value.package` if it exists, otherwise `null`
+    let info
 
     next = generator.next(info)
   } else {
     const resolution = value.resolution
 
-    next = generator.next()
+    // `true` if `resolution` was the correct candidate, otherwise `false`
+    let resolved
+
+    next = generator.next(resolved)
   }
 }
 ```

@@ -378,7 +378,6 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
 exports.linked = function* (name, version = null, opts = {}) {
   const {
     linked = true,
-    linkedProtocol = 'linked:',
     host = null, // Shorthand for single host resolution
     hosts = host !== null ? [host] : [],
     matchedConditions = []
@@ -395,34 +394,24 @@ exports.linked = function* (name, version = null, opts = {}) {
 
     matchedConditions.push(platform)
 
-    if (platform === 'darwin' || platform === 'ios') {
-      if (version !== null) {
-        if (
-          yield {
-            resolution: new URL(
-              `${linkedProtocol}${name}.${version}.framework/${name}.${version}`
-            )
-          }
-        ) {
-          return RESOLVED
-        }
+    status |= yield* platformArtefact(name, version, platform, opts)
 
-        if (platform === 'darwin') {
-          if (
-            yield {
-              resolution: new URL(
-                `${linkedProtocol}lib${name}.${version}.dylib`
-              )
-            }
-          ) {
-            return RESOLVED
-          }
-        }
-      }
+    matchedConditions.pop()
+  }
 
+  return status
+}
+
+function* platformArtefact(name, version = null, platform, opts = {}) {
+  const { linkedProtocol = 'linked:' } = opts
+
+  if (platform === 'darwin' || platform === 'ios') {
+    if (version !== null) {
       if (
         yield {
-          resolution: new URL(`${linkedProtocol}${name}.framework/${name}`)
+          resolution: new URL(
+            `${linkedProtocol}${name}.${version}.framework/${name}.${version}`
+          )
         }
       ) {
         return RESOLVED
@@ -431,60 +420,78 @@ exports.linked = function* (name, version = null, opts = {}) {
       if (platform === 'darwin') {
         if (
           yield {
-            resolution: new URL(`${linkedProtocol}lib${name}.dylib`)
+            resolution: new URL(`${linkedProtocol}lib${name}.${version}.dylib`)
           }
         ) {
           return RESOLVED
         }
       }
-
-      status = YIELDED
-    } else if (platform === 'linux' || platform === 'android') {
-      if (version !== null) {
-        if (
-          yield {
-            resolution: new URL(`${linkedProtocol}lib${name}.${version}.so`)
-          }
-        ) {
-          return RESOLVED
-        }
-      }
-
-      if (
-        yield {
-          resolution: new URL(`${linkedProtocol}lib${name}.so`)
-        }
-      ) {
-        return RESOLVED
-      }
-
-      status = YIELDED
-    } else if (platform === 'win32') {
-      if (version !== null) {
-        if (
-          yield {
-            resolution: new URL(`${linkedProtocol}${name}-${version}.dll`)
-          }
-        ) {
-          return RESOLVED
-        }
-      }
-
-      if (
-        yield {
-          resolution: new URL(`${linkedProtocol}${name}.dll`)
-        }
-      ) {
-        return RESOLVED
-      }
-
-      status = YIELDED
     }
 
-    matchedConditions.pop()
+    if (
+      yield {
+        resolution: new URL(`${linkedProtocol}${name}.framework/${name}`)
+      }
+    ) {
+      return RESOLVED
+    }
+
+    if (platform === 'darwin') {
+      if (
+        yield {
+          resolution: new URL(`${linkedProtocol}lib${name}.dylib`)
+        }
+      ) {
+        return RESOLVED
+      }
+    }
+
+    return YIELDED
   }
 
-  return status
+  if (platform === 'linux' || platform === 'android') {
+    if (version !== null) {
+      if (
+        yield {
+          resolution: new URL(`${linkedProtocol}lib${name}.${version}.so`)
+        }
+      ) {
+        return RESOLVED
+      }
+    }
+
+    if (
+      yield {
+        resolution: new URL(`${linkedProtocol}lib${name}.so`)
+      }
+    ) {
+      return RESOLVED
+    }
+
+    return YIELDED
+  }
+
+  if (platform === 'win32') {
+    if (version !== null) {
+      if (
+        yield {
+          resolution: new URL(`${linkedProtocol}${name}-${version}.dll`)
+        }
+      ) {
+        return RESOLVED
+      }
+    }
+
+    if (
+      yield {
+        resolution: new URL(`${linkedProtocol}${name}.dll`)
+      }
+    ) {
+      return RESOLVED
+    }
+  }
+
+  return UNRESOLVED
 }
 
 exports.isWindowsDriveLetter = resolve.isWindowsDriveLetter

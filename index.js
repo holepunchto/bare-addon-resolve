@@ -118,9 +118,12 @@ exports.addon = function* (specifier, parentURL, opts = {}) {
 }
 
 exports.url = function* (url, parentURL, opts = {}) {
-  const resolution = URL.parse(url)
-
-  if (resolution === null) return UNRESOLVED
+  let resolution
+  try {
+    resolution = new URL(url)
+  } catch {
+    return UNRESOLVED
+  }
 
   const resolved = yield { resolution }
 

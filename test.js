@@ -94,12 +94,12 @@ test('bare specifier, scoped pkg.name', (t) => {
   }
 
   t.alike(result, [
-    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d+e.bare`,
-    `file:///a/b/node_modules/@d/prebuilds/${host}/d+e.bare`,
-    `file:///a/b/node_modules/prebuilds/${host}/d+e.bare`,
-    `file:///a/b/prebuilds/${host}/d+e.bare`,
-    `file:///a/prebuilds/${host}/d+e.bare`,
-    `file:///prebuilds/${host}/d+e.bare`
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d__e.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d__e.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d__e.bare`,
+    `file:///a/b/prebuilds/${host}/d__e.bare`,
+    `file:///a/prebuilds/${host}/d__e.bare`,
+    `file:///prebuilds/${host}/d__e.bare`
   ])
 })
 
@@ -127,19 +127,45 @@ test('bare specifier, scoped pkg.name + pkg.version', (t) => {
   }
 
   t.alike(result, [
-    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d+e@1.2.3.bare`,
-    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d+e.bare`,
-    `file:///a/b/node_modules/@d/prebuilds/${host}/d+e@1.2.3.bare`,
-    `file:///a/b/node_modules/@d/prebuilds/${host}/d+e.bare`,
-    `file:///a/b/node_modules/prebuilds/${host}/d+e@1.2.3.bare`,
-    `file:///a/b/node_modules/prebuilds/${host}/d+e.bare`,
-    `file:///a/b/prebuilds/${host}/d+e@1.2.3.bare`,
-    `file:///a/b/prebuilds/${host}/d+e.bare`,
-    `file:///a/prebuilds/${host}/d+e@1.2.3.bare`,
-    `file:///a/prebuilds/${host}/d+e.bare`,
-    `file:///prebuilds/${host}/d+e@1.2.3.bare`,
-    `file:///prebuilds/${host}/d+e.bare`
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d__e.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d__e.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d__e.bare`,
+    `file:///a/b/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/prebuilds/${host}/d__e.bare`,
+    `file:///a/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/prebuilds/${host}/d__e.bare`,
+    `file:///prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///prebuilds/${host}/d__e.bare`
   ])
+})
+
+test('bare specifier, invalid scoped pkg.name', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/@d__/e/package.json') {
+      return {
+        name: '@d__/e'
+      }
+    }
+
+    return null
+  }
+
+  try {
+    for (const resolution of resolve(
+      '@d__/e',
+      new URL('file:///a/b/c'),
+      { host, extensions: ['.bare'] },
+      readPackage
+    )) {
+      t.absent(resolution)
+    }
+  } catch (err) {
+    t.comment(err.message)
+    t.ok(err)
+  }
 })
 
 test('versioned bare specifier, pkg.name', (t) => {

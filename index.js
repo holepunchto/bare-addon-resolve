@@ -287,7 +287,6 @@ exports.file = function* (filename, parentURL, opts = {}) {
 
 exports.directory = function* (dirname, version, parentURL, opts = {}) {
   const {
-    resolutions = null,
     host = null, // Shorthand for single host resolution
     hosts = host !== null ? [host] : [],
     builtins = [],
@@ -303,19 +302,6 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
     directoryURL = new URL(dirname, parentURL)
   } else {
     directoryURL = new URL(dirname + '/', parentURL)
-  }
-
-  // Internal preresolution path, do not depend on this! It will be removed without
-  // warning.
-  if (resolutions) {
-    const status = yield* resolve.preresolved(
-      'bare:addon',
-      resolutions,
-      directoryURL,
-      opts
-    )
-
-    if (status) return status
   }
 
   const unversioned = version === null

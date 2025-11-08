@@ -312,6 +312,7 @@ test('relative specifier, pkg.name', (t) => {
   }
 
   t.alike(result, [
+    `file:///a/b/d.bare`,
     `file:///a/b/d/prebuilds/${host}/d.bare`,
     `file:///a/b/prebuilds/${host}/d.bare`,
     `file:///a/prebuilds/${host}/d.bare`,
@@ -343,6 +344,7 @@ test('relative specifier, pkg.name + pkg.version', (t) => {
   }
 
   t.alike(result, [
+    `file:///a/b/d.bare`,
     `file:///a/b/d/prebuilds/${host}/d@1.2.3.bare`,
     `file:///a/b/d/prebuilds/${host}/d.bare`,
     `file:///a/b/prebuilds/${host}/d@1.2.3.bare`,
@@ -411,6 +413,31 @@ test('relative specifier, parent directory', (t) => {
   ])
 })
 
+test('relative specifier with extension', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    './d.bare',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [`file:///a/b/d.bare`])
+})
+
 test('relative specifier with scope and no version', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/@d/e/package.json') {
@@ -434,6 +461,7 @@ test('relative specifier with scope and no version', (t) => {
   }
 
   t.alike(result, [
+    `file:///a/b/@d/e.bare`,
     `file:///a/b/@d/e/prebuilds/${host}/e.bare`,
     `file:///a/b/@d/prebuilds/${host}/e.bare`,
     `file:///a/b/prebuilds/${host}/e.bare`,
@@ -465,6 +493,7 @@ test('absolute specifier, pkg.name', (t) => {
   }
 
   t.alike(result, [
+    `file:///d.bare`,
     `file:///d/prebuilds/${host}/d.bare`,
     `file:///prebuilds/${host}/d.bare`
   ])
@@ -493,6 +522,7 @@ test('absolute specifier, Windows path', (t) => {
   }
 
   t.alike(result, [
+    `file:///d.bare`,
     `file:///d/prebuilds/${host}/d.bare`,
     `file:///prebuilds/${host}/d.bare`
   ])
@@ -521,9 +551,35 @@ test('absolute specifier, Windows path with drive letter', (t) => {
   }
 
   t.alike(result, [
+    `file:///c:/d.bare`,
     `file:///c:/d/prebuilds/${host}/d.bare`,
     `file:///c:/prebuilds/${host}/d.bare`
   ])
+})
+
+test('absolute specifier with extension', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    '/d.bare',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [`file:///d.bare`])
 })
 
 test('builtin, relative specifier, pkg.name', (t) => {
@@ -575,6 +631,56 @@ test('builtin, relative specifier, pkg.name + pkg.version', (t) => {
   }
 
   t.alike(result, ['builtin:e@1.2.3'])
+})
+
+test('builtin, relative specifier, pkg.name, extensions', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    './d',
+    new URL('file:///a/b/c'),
+    { builtins: ['e'], extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['file:///a/b/d.bare', 'builtin:e'])
+})
+
+test('builtin, relative specifier with extension, pkg.name, extensions', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    './d.bare',
+    new URL('file:///a/b/c'),
+    { builtins: ['e'], extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['file:///a/b/d.bare'])
 })
 
 test('versioned builtin, relative specifier, pkg.name', (t) => {

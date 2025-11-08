@@ -111,6 +111,10 @@ exports.addon = function* (specifier, parentURL, opts = {}) {
     specifier.startsWith('../') ||
     specifier.startsWith('..\\')
   ) {
+    status = yield* exports.file(specifier, parentURL, opts)
+
+    if (status === RESOLVED) return status
+
     return yield* exports.directory(specifier, version, parentURL, opts)
   }
 
@@ -264,6 +268,15 @@ exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
 }
 
 exports.file = function* (filename, parentURL, opts = {}) {
+  if (
+    filename === '.' ||
+    filename === '..' ||
+    filename[filename.length - 1] === '/' ||
+    filename[filename.length - 1] === '\\'
+  ) {
+    return UNRESOLVED
+  }
+
   if (parentURL.protocol === 'file:' && /%2f|%5c/i.test(filename)) {
     throw errors.INVALID_ADDON_SPECIFIER(
       `Addon specifier '${filename}' is invalid`
@@ -274,7 +287,9 @@ exports.file = function* (filename, parentURL, opts = {}) {
 
   let status = UNRESOLVED
 
-  for (const ext of extensions) {
+  for (let ext of extensions) {
+    if (filename.endsWith(ext)) ext = ''
+
     if (yield { resolution: new URL(filename + ext, parentURL) }) {
       return RESOLVED
     }

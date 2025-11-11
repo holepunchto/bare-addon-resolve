@@ -2,12 +2,7 @@ const resolve = require('bare-module-resolve')
 const { Version } = require('bare-semver')
 const errors = require('./lib/errors')
 
-module.exports = exports = function resolve(
-  specifier,
-  parentURL,
-  opts,
-  readPackage
-) {
+module.exports = exports = function resolve(specifier, parentURL, opts, readPackage) {
   if (typeof opts === 'function') {
     readPackage = opts
     opts = {}
@@ -134,12 +129,7 @@ exports.url = function* (url, parentURL, opts = {}) {
   return resolved ? RESOLVED : YIELDED
 }
 
-exports.package = function* (
-  packageSpecifier,
-  packageVersion,
-  parentURL,
-  opts = {}
-) {
+exports.package = function* (packageSpecifier, packageVersion, parentURL, opts = {}) {
   if (packageSpecifier === '') {
     throw errors.INVALID_ADDON_SPECIFIER(
       `Addon specifier '${packageSpecifier}' is not a valid package name`
@@ -160,11 +150,7 @@ exports.package = function* (
     packageName = packageSpecifier.split('/', 2).join('/')
   }
 
-  if (
-    packageName[0] === '.' ||
-    packageName.includes('\\') ||
-    packageName.includes('%')
-  ) {
+  if (packageName[0] === '.' || packageName.includes('\\') || packageName.includes('%')) {
     throw errors.INVALID_ADDON_SPECIFIER(
       `Addon specifier '${packageSpecifier}' is not a valid package name`
     )
@@ -187,20 +173,12 @@ exports.package = function* (
   do {
     const packageURL = new URL('node_modules/' + packageName + '/', parentURL)
 
-    parentURL.pathname = parentURL.pathname.substring(
-      0,
-      parentURL.pathname.lastIndexOf('/')
-    )
+    parentURL.pathname = parentURL.pathname.substring(0, parentURL.pathname.lastIndexOf('/'))
 
     const info = yield { package: new URL('package.json', packageURL) }
 
     if (info) {
-      return yield* exports.directory(
-        packageSubpath,
-        packageVersion,
-        packageURL,
-        opts
-      )
+      return yield* exports.directory(packageSubpath, packageVersion, packageURL, opts)
     }
   } while (parentURL.pathname !== '' && parentURL.pathname !== '/')
 
@@ -219,12 +197,7 @@ exports.packageSelf = function* (
 
     if (info) {
       if (info.name === packageName) {
-        return yield* exports.directory(
-          packageSubpath,
-          packageVersion,
-          packageURL,
-          opts
-        )
+        return yield* exports.directory(packageSubpath, packageVersion, packageURL, opts)
       }
 
       break
@@ -238,12 +211,7 @@ exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
   const { resolutions = null } = opts
 
   if (resolutions) {
-    for (const { resolution } of resolve.preresolved(
-      '#prebuilds',
-      resolutions,
-      url,
-      opts
-    )) {
+    for (const { resolution } of resolve.preresolved('#prebuilds', resolutions, url, opts)) {
       if (resolution) return yield resolution
     }
   }
@@ -253,10 +221,7 @@ exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
   do {
     yield new URL('prebuilds/', scopeURL)
 
-    scopeURL.pathname = scopeURL.pathname.substring(
-      0,
-      scopeURL.pathname.lastIndexOf('/')
-    )
+    scopeURL.pathname = scopeURL.pathname.substring(0, scopeURL.pathname.lastIndexOf('/'))
 
     if (
       scopeURL.pathname.length === 3 &&
@@ -278,9 +243,7 @@ exports.file = function* (filename, parentURL, opts = {}) {
   }
 
   if (parentURL.protocol === 'file:' && /%2f|%5c/i.test(filename)) {
-    throw errors.INVALID_ADDON_SPECIFIER(
-      `Addon specifier '${filename}' is invalid`
-    )
+    throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${filename}' is invalid`)
   }
 
   const { extensions = [] } = opts
@@ -310,10 +273,7 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
 
   let directoryURL
 
-  if (
-    dirname[dirname.length - 1] === '/' ||
-    dirname[dirname.length - 1] === '\\'
-  ) {
+  if (dirname[dirname.length - 1] === '/' || dirname[dirname.length - 1] === '\\') {
     directoryURL = new URL(dirname, parentURL)
   } else {
     directoryURL = new URL(dirname + '/', parentURL)
@@ -328,9 +288,7 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
   if (info) {
     if (typeof info.name === 'string' && info.name !== '') {
       if (info.name.includes('__')) {
-        throw errors.INVALID_PACKAGE_NAME(
-          `Package name '${info.name}' is invalid`
-        )
+        throw errors.INVALID_PACKAGE_NAME(`Package name '${info.name}' is invalid`)
       }
 
       name = info.name.replace(/\//g, '__').replace(/^@/, '')
@@ -362,11 +320,7 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
       matchedConditions.push(...conditions)
 
       if (version !== null) {
-        status |= yield* exports.file(
-          host + '/' + name + '@' + version,
-          prebuildsURL,
-          opts
-        )
+        status |= yield* exports.file(host + '/' + name + '@' + version, prebuildsURL, opts)
       }
 
       if (unversioned) {
@@ -416,9 +370,7 @@ function* platformArtefact(name, version = null, platform, opts = {}) {
     if (version !== null) {
       if (
         yield {
-          resolution: new URL(
-            `${linkedProtocol}${name}.${version}.framework/${name}.${version}`
-          )
+          resolution: new URL(`${linkedProtocol}${name}.${version}.framework/${name}.${version}`)
         }
       ) {
         return RESOLVED

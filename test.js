@@ -407,10 +407,7 @@ test('relative specifier, parent directory', (t) => {
     result.push(resolution.href)
   }
 
-  t.alike(result, [
-    `file:///a/prebuilds/${host}/d.bare`,
-    `file:///prebuilds/${host}/d.bare`
-  ])
+  t.alike(result, [`file:///a/prebuilds/${host}/d.bare`, `file:///prebuilds/${host}/d.bare`])
 })
 
 test('relative specifier with extension', (t) => {
@@ -1204,12 +1201,7 @@ test('linked module, darwin', (t) => {
   const host = 'darwin-arm64'
   const result = []
 
-  for (const resolution of resolve(
-    'e',
-    new URL('file:///a/b/c'),
-    { host },
-    readPackage
-  )) {
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -1236,12 +1228,7 @@ test('linked module, ios', (t) => {
   const host = 'ios-arm64'
   const result = []
 
-  for (const resolution of resolve(
-    'e',
-    new URL('file:///a/b/c'),
-    { host },
-    readPackage
-  )) {
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -1263,12 +1250,7 @@ test('linked module, linux', (t) => {
   const host = 'linux-arm64'
   const result = []
 
-  for (const resolution of resolve(
-    'e',
-    new URL('file:///a/b/c'),
-    { host },
-    readPackage
-  )) {
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -1290,12 +1272,7 @@ test('linked module, android', (t) => {
   const host = 'android-arm64'
   const result = []
 
-  for (const resolution of resolve(
-    'e',
-    new URL('file:///a/b/c'),
-    { host },
-    readPackage
-  )) {
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
     result.push(resolution.href)
   }
 
@@ -1317,12 +1294,7 @@ test('linked module, win32', (t) => {
   const host = 'win32-arm64'
   const result = []
 
-  for (const resolution of resolve(
-    'e',
-    new URL('file:///a/b/c'),
-    { host },
-    readPackage
-  )) {
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
     result.push(resolution.href)
   }
 

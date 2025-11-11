@@ -1,10 +1,5 @@
 import URL from 'bare-url'
-import {
-  constants,
-  type Builtins,
-  type Conditions,
-  type ResolutionsMap
-} from 'bare-module-resolve'
+import { constants, type Builtins, type Conditions, type ResolutionsMap } from 'bare-module-resolve'
 
 type JSON = string | number | boolean | JSON[] | { [key: string]: JSON }
 
@@ -56,17 +51,9 @@ declare namespace resolve {
     void | boolean | JSON | null
   >
 
-  export function addon(
-    specifier: string,
-    parentURL: URL,
-    opts?: ResolveOptions
-  ): Resolver
+  export function addon(specifier: string, parentURL: URL, opts?: ResolveOptions): Resolver
 
-  export function url(
-    specifier: string,
-    parentURL: URL,
-    opts?: ResolveOptions
-  ): Resolver
+  export function url(specifier: string, parentURL: URL, opts?: ResolveOptions): Resolver
 
   export function package(
     packageSpecifier: string,
@@ -83,11 +70,7 @@ declare namespace resolve {
     opts?: ResolveOptions
   ): Resolver
 
-  export function file(
-    filename: string,
-    parentURL: URL,
-    opts?: ResolveOptions
-  ): Resolver
+  export function file(filename: string, parentURL: URL, opts?: ResolveOptions): Resolver
 
   export function directory(
     dirname: string,
@@ -96,11 +79,7 @@ declare namespace resolve {
     opts?: ResolveOptions
   ): Resolver
 
-  export function linked(
-    name: string,
-    version?: string,
-    opts?: ResolveOptions
-  ): Resolver
+  export function linked(name: string, version?: string, opts?: ResolveOptions): Resolver
 }
 
 export = resolve

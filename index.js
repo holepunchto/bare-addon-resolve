@@ -208,14 +208,6 @@ exports.packageSelf = function* (
 }
 
 exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
-  const { resolutions = null } = opts
-
-  if (resolutions) {
-    for (const { resolution } of resolve.preresolved('#prebuilds', resolutions, url, opts)) {
-      if (resolution) return yield resolution
-    }
-  }
-
   const scopeURL = new URL(url.href)
 
   do {

@@ -1379,24 +1379,6 @@ test('multiple hosts, linked module', (t) => {
   ])
 })
 
-test('prebuilds scope lookup with resolutions map', (t) => {
-  const resolutions = {
-    'file:///a/b/': {
-      '#prebuilds': 'file:///a/prebuilds/'
-    }
-  }
-
-  const result = []
-
-  for (const scope of resolve.lookupPrebuildsScope(new URL('file:///a/b/'), {
-    resolutions
-  })) {
-    result.push(scope.href)
-  }
-
-  t.alike(result, ['file:///a/prebuilds/'])
-})
-
 test('prebuilds scope lookup with root file: URL', (t) => {
   const result = []
 

@@ -1379,6 +1379,79 @@ test('multiple hosts, linked module', (t) => {
   ])
 })
 
+test('universal prebuilds, darwin-arm64', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/node_modules/c/package.json') {
+      return {
+        name: 'c'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+  const result = []
+
+  for (const resolution of resolve(
+    'c',
+    new URL('file:///a/b'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/node_modules/c/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/c/prebuilds/darwin-universal/c.bare`,
+    `file:///a/node_modules/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/prebuilds/darwin-universal/c.bare`,
+    `file:///a/prebuilds/${host}/c.bare`,
+    `file:///a/prebuilds/darwin-universal/c.bare`,
+    `file:///prebuilds/${host}/c.bare`,
+    `file:///prebuilds/darwin-universal/c.bare`,
+    `linked:c.framework/c`,
+    `linked:libc.dylib`
+  ])
+})
+
+test('universal prebuilds, ios-arm64-simulator', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/node_modules/c/package.json') {
+      return {
+        name: 'c'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'ios-arm64-simulator'
+  const result = []
+
+  for (const resolution of resolve(
+    'c',
+    new URL('file:///a/b'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/node_modules/c/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/c/prebuilds/ios-universal-simulator/c.bare`,
+    `file:///a/node_modules/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/prebuilds/ios-universal-simulator/c.bare`,
+    `file:///a/prebuilds/${host}/c.bare`,
+    `file:///a/prebuilds/ios-universal-simulator/c.bare`,
+    `file:///prebuilds/${host}/c.bare`,
+    `file:///prebuilds/ios-universal-simulator/c.bare`,
+    `linked:c.framework/c`
+  ])
+})
+
 test('prebuilds scope lookup with root file: URL', (t) => {
   const result = []
 

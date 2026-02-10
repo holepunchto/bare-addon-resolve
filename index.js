@@ -309,14 +309,26 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
     for (const host of hosts) {
       const conditions = host.split('-')
 
+      const universal = supportsUniversalPrebuilds(host)
+        ? conditions.with(1, 'universal').join('-')
+        : null
+
       matchedConditions.push(...conditions)
 
       if (version !== null) {
         status |= yield* exports.file(host + '/' + name + '@' + version, prebuildsURL, opts)
+
+        if (universal) {
+          status |= yield* exports.file(universal + '/' + name + '@' + version, prebuildsURL, opts)
+        }
       }
 
       if (unversioned) {
         status |= yield* exports.file(host + '/' + name, prebuildsURL, opts)
+
+        if (universal) {
+          status |= yield* exports.file(universal + '/' + name, prebuildsURL, opts)
+        }
       }
 
       for (const _ of conditions) matchedConditions.pop()
@@ -448,3 +460,12 @@ function* platformArtefact(name, version = null, platform, opts = {}) {
 exports.isWindowsDriveLetter = resolve.isWindowsDriveLetter
 
 exports.startsWithWindowsDriveLetter = resolve.startsWithWindowsDriveLetter
+
+function supportsUniversalPrebuilds(host) {
+  return (
+    host === 'darwin-arm64' ||
+    host === 'darwin-x64' ||
+    host === 'ios-arm64-simulator' ||
+    host === 'ios-x64-simulator'
+  )
+}

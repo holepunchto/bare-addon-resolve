@@ -1471,3 +1471,71 @@ test('prebuilds scope lookup with root non-file: URL', (t) => {
 
   t.alike(result, ['drive:///prebuilds/'])
 })
+
+test('relative specifier from data: URL', (t) => {
+  const result = []
+
+  for (const resolution of resolve(
+    './d',
+    new URL('data:text/javascript,export default 42'),
+    { host, extensions: ['.bare'] }
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('bare specifier from data: URL', (t) => {
+  const result = []
+
+  for (const resolution of resolve(
+    'd',
+    new URL('data:text/javascript,export default 42'),
+    { host, extensions: ['.bare'] }
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('default specifier from data: URL', (t) => {
+  const result = []
+
+  for (const resolution of resolve(
+    '.',
+    new URL('data:text/javascript,export default 42'),
+    { host, extensions: ['.bare'] }
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('absolute specifier from data: URL', (t) => {
+  const result = []
+
+  for (const resolution of resolve(
+    'file:///d.bare',
+    new URL('data:text/javascript,export default 42'),
+    { host, extensions: ['.bare'] }
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['file:///d.bare'])
+})
+
+test('prebuilds scope lookup with data: URL', (t) => {
+  const result = []
+
+  for (const scope of resolve.lookupPrebuildsScope(
+    new URL('data:text/javascript,export default 42')
+  )) {
+    result.push(scope.href)
+  }
+
+  t.alike(result, [])
+})

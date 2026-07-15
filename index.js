@@ -158,6 +158,8 @@ exports.package = function* (packageSpecifier, packageVersion, parentURL, opts =
 
   const packageSubpath = '.' + packageSpecifier.substring(packageName.length)
 
+  if (hasOpaquePath(parentURL)) return UNRESOLVED
+
   const status = yield* exports.packageSelf(
     packageName,
     packageSubpath,
@@ -208,6 +210,8 @@ exports.packageSelf = function* (
 }
 
 exports.lookupPrebuildsScope = function* lookupPrebuildsScope(url, opts = {}) {
+  if (hasOpaquePath(url)) return
+
   const scopeURL = new URL(url.href)
 
   do {
@@ -233,6 +237,8 @@ exports.file = function* (filename, parentURL, opts = {}) {
   ) {
     return UNRESOLVED
   }
+
+  if (hasOpaquePath(parentURL)) return UNRESOLVED
 
   if (parentURL.protocol === 'file:' && /%2f|%5c/i.test(filename)) {
     throw errors.INVALID_ADDON_SPECIFIER(`Addon specifier '${filename}' is invalid`)
@@ -262,6 +268,8 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
     builtins = [],
     matchedConditions = []
   } = opts
+
+  if (hasOpaquePath(parentURL)) return UNRESOLVED
 
   let directoryURL
 
@@ -468,4 +476,9 @@ function supportsUniversalPrebuilds(host) {
     host === 'ios-arm64-simulator' ||
     host === 'ios-x64-simulator'
   )
+}
+
+// https://url.spec.whatwg.org/#url-opaque-path
+function hasOpaquePath(url) {
+  return url.pathname[0] !== '/'
 }

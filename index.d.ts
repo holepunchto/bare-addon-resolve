@@ -16,6 +16,15 @@ interface ResolveOptions {
   resolutions?: ResolutionsMap
 }
 
+/**
+ * Resolve `specifier` relative to `parentURL`, which must be a WHATWG `URL` instance. `readPackage` is called with a `URL` instance for every package manifest to be read and must either return the parsed JSON package manifest, if it exists, or `null`. If `readPackage` returns a promise, synchronous iteration is not supported.
+ * @param specifier - The module specifier to resolve.
+ * @param parentURL - The URL to resolve `specifier` relative to.
+ * @param readPackage - Called with the URL of each package manifest encountered; must return the parsed manifest or `null`. Returning a promise disables synchronous iteration.
+ * @returns Yields candidate resolution `URL`s for the caller to test, in the order the algorithm tries them.
+ * @throws {INVALID_ADDON_SPECIFIER} the addon specifier is not a valid package name or contains an invalid escape sequence.
+ * @throws {INVALID_PACKAGE_NAME} a package manifest's `name` field is invalid (e.g. contains `__`).
+ */
 declare function resolve(
   specifier: string,
   parentURL: URL,

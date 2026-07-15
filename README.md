@@ -36,120 +36,89 @@ for await (const resolution of resolve('./addon', new URL('file:///directory/'),
 }
 ```
 
+<!-- bare-refgen:api start -->
 ## API
 
-#### `const resolver = resolve(specifier, parentURL[, options][, readPackage])`
+### Functions
+
+#### `resolve`
+
+```ts
+resolve(specifier: string, parentURL: URL, readPackage?: (url: URL) => JSON | null): Iterable<URL>
+```
+
+[source](https://github.com/holepunchto/bare-addon-resolve/blob/v1.10.0/index.d.ts#L19)
 
 Resolve `specifier` relative to `parentURL`, which must be a WHATWG `URL` instance. `readPackage` is called with a `URL` instance for every package manifest to be read and must either return the parsed JSON package manifest, if it exists, or `null`. If `readPackage` returns a promise, synchronous iteration is not supported.
 
-Options include:
+**Parameters**
 
-```js
-options = {
-  // A list of builtin addon specifiers. If matched, the protocol of the
-  // resolved URL will be `builtinProtocol`.
-  builtins: [],
-  // The protocol to use for resolved builtin addon specifiers.
-  builtinProtocol: 'builtin:',
-  // Whether or not addons linked ahead-of-time should be resolved.
-  linked: true,
-  // The protocol to use for addons linked ahead-of-time.
-  linkedProtocol: 'linked:',
-  // The supported import conditions. "default" is always recognized.
-  conditions: [],
-  // An array reference which will contain the matched conditions when yielding
-  // resolutions.
-  matchedConditions: [],
-  // The `<platform>-<arch>` combinations to look for when resolving dynamic
-  // addons. If empty, only builtin specifiers can be resolved. In Bare,
-  // pass `[Bare.Addon.host]`.
-  hosts: [],
-  // The file extensions to look for when resolving dynamic addons.
-  extensions: [],
-  // A map of preresolved imports with keys being serialized directory URLs and
-  // values being "imports" maps.
-  resolutions
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `specifier` | `string` | — | The module specifier to resolve. |
+| `parentURL` | `URL` | — | The URL to resolve `specifier` relative to. |
+| `readPackage?` | `(url: URL) => JSON \| null` | — | Called with the URL of each package manifest encountered; must return the parsed manifest or `null`. Returning a promise disables synchronous iteration. |
+
+**Returns** `Iterable<URL>` — Yields candidate resolution `URL`s for the caller to test, in the order the algorithm tries them.
+
+**Throws**
+
+- `INVALID_ADDON_SPECIFIER` — the addon specifier is not a valid package name or contains an invalid escape sequence.
+- `INVALID_PACKAGE_NAME` — a package manifest's `name` field is invalid (e.g. contains `__`).
+
+### Types
+
+#### `ResolveOptions`
+
+```ts
+interface ResolveOptions {
+  builtinProtocol?: string
+  builtins?: Builtins
+  conditions?: Conditions
+  extensions?: string[]
+  host?: string
+  hosts?: string[]
+  linked?: boolean
+  linkedProtocol?: string
+  matchedConditions?: string[]
+  resolutions?: ResolutionsMap
 }
 ```
 
-#### `for (const resolution of resolver)`
+[source](https://github.com/holepunchto/bare-addon-resolve/blob/v1.10.0/index.d.ts#L6)
 
-Synchronously iterate the addon resolution candidates. The resolved addon is the first candidate that exists as a file on the file system.
+## `bare-addon-resolve/errors`
 
-#### `for await (const resolution of resolver)`
+### AddonResolveError
 
-Asynchronously iterate the addon resolution candidates. If `readPackage` returns promises, these will be awaited. The same comments as `for (const resolution of resolver)` apply.
+#### `AddonResolveError.INVALID_ADDON_SPECIFIER(msg: string): AddonResolveError`
 
-### Algorithm
+[source](https://github.com/holepunchto/bare-addon-resolve/blob/v1.10.0/lib/errors.d.ts#L4)
 
-The following generator functions implement the resolution algorithm. The yielded values have the following shape:
+**Parameters**
 
-**Package manifest**
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `msg` | `string` | — | The error message. |
 
-```js
-next.value = {
-  package: URL
-}
-```
+**Returns** `AddonResolveError` — A new `AddonResolveError` with code `INVALID_ADDON_SPECIFIER`.
 
-If the package manifest identified by `next.value.package` exists, `generator.next()` must be passed the parsed JSON value of the manifest. If it does not exist, pass `null` instead.
+#### `AddonResolveError.INVALID_PACKAGE_NAME(msg: string): AddonResolveError`
 
-**Resolution candidate**
+[source](https://github.com/holepunchto/bare-addon-resolve/blob/v1.10.0/lib/errors.d.ts#L5)
 
-```js
-next.value = {
-  resolution: URL
-}
-```
+**Parameters**
 
-If the addon identified by `next.value.resolution` exists, `generator.next()` may be passed `true` to signal that the resolution for the current set of conditions has been identified. If it does not exist, pass `false` instead.
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `msg` | `string` | — | The error message. |
 
-To drive the generator functions, a loop like the following can be used:
+**Returns** `AddonResolveError` — A new `AddonResolveError` with code `INVALID_PACKAGE_NAME`.
 
-```js
-const generator = resolve.addon(specifier, parentURL)
+#### `code: string`
 
-let next = generator.next()
-
-while (next.done !== true) {
-  const value = next.value
-
-  if (value.package) {
-    // Read and parse `value.package` if it exists, otherwise `null`
-    let info
-
-    next = generator.next(info)
-  } else {
-    const resolution = value.resolution
-
-    // `true` if `resolution` was the correct candidate, otherwise `false`
-    let resolved
-
-    next = generator.next(resolved)
-  }
-}
-```
-
-Options are the same as `resolve()` for all functions.
-
-> [!WARNING]
-> These functions are currently subject to change between minor releases. If using them directly, make sure to specify a tilde range (`~1.2.3`) when declaring the module dependency.
-
-#### `const generator = resolve.addon(specifier, parentURL[, options])`
-
-#### `const generator = resolve.url(url, parentURL[, options])`
-
-#### `const generator = resolve.package(packageSpecifier, packageVersion, parentURL[, options])`
-
-#### `const generator = resolve.packageSelf(packageName, packageSubpath, packageVersion, parentURL[, options])`
-
-#### `const generator = resolve.preresolved(directoryURL, resolutions[, options])`
-
-#### `const generator = resolve.file(filename, parentURL[, options])`
-
-#### `const generator = resolve.directory(dirname, version, parentURL[, options])`
-
-#### `const generator = resolve.linked(name, version[, options])`
+[source](https://github.com/holepunchto/bare-addon-resolve/blob/v1.10.0/lib/errors.d.ts#L2)
+<!-- bare-refgen:api end -->
 
 ## License
 

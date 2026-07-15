@@ -1475,11 +1475,10 @@ test('prebuilds scope lookup with root non-file: URL', (t) => {
 test('relative specifier from data: URL', (t) => {
   const result = []
 
-  for (const resolution of resolve(
-    './d',
-    new URL('data:text/javascript,export default 42'),
-    { host, extensions: ['.bare'] }
-  )) {
+  for (const resolution of resolve('./d', new URL('data:text/javascript,export default 42'), {
+    host,
+    extensions: ['.bare']
+  })) {
     result.push(resolution.href)
   }
 
@@ -1489,11 +1488,10 @@ test('relative specifier from data: URL', (t) => {
 test('bare specifier from data: URL', (t) => {
   const result = []
 
-  for (const resolution of resolve(
-    'd',
-    new URL('data:text/javascript,export default 42'),
-    { host, extensions: ['.bare'] }
-  )) {
+  for (const resolution of resolve('d', new URL('data:text/javascript,export default 42'), {
+    host,
+    extensions: ['.bare']
+  })) {
     result.push(resolution.href)
   }
 
@@ -1503,11 +1501,10 @@ test('bare specifier from data: URL', (t) => {
 test('default specifier from data: URL', (t) => {
   const result = []
 
-  for (const resolution of resolve(
-    '.',
-    new URL('data:text/javascript,export default 42'),
-    { host, extensions: ['.bare'] }
-  )) {
+  for (const resolution of resolve('.', new URL('data:text/javascript,export default 42'), {
+    host,
+    extensions: ['.bare']
+  })) {
     result.push(resolution.href)
   }
 

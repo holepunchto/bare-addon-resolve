@@ -1,6 +1,8 @@
 const test = require('brittle')
 const resolve = require('.')
 
+const { RESOLVED } = resolve.constants
+
 const host = 'host'
 
 test('bare specifier, pkg.name', (t) => {
@@ -168,6 +170,42 @@ test('bare specifier, invalid scoped pkg.name', (t) => {
   }
 })
 
+test('empty specifier', (t) => {
+  t.plan(1)
+
+  try {
+    for (const resolution of resolve('', new URL('file:///a/b/c'), { host })) {
+      t.absent(resolution)
+    }
+  } catch (err) {
+    t.is(err.code, 'INVALID_ADDON_SPECIFIER')
+  }
+})
+
+test('scoped specifier without slash', (t) => {
+  t.plan(1)
+
+  try {
+    for (const resolution of resolve('@foo', new URL('file:///a/b/c'), { host })) {
+      t.absent(resolution)
+    }
+  } catch (err) {
+    t.is(err.code, 'INVALID_ADDON_SPECIFIER')
+  }
+})
+
+test('specifier with invalid package name character', (t) => {
+  t.plan(1)
+
+  try {
+    for (const resolution of resolve('a%b', new URL('file:///a/b/c'), { host })) {
+      t.absent(resolution)
+    }
+  } catch (err) {
+    t.is(err.code, 'INVALID_ADDON_SPECIFIER')
+  }
+})
+
 test('versioned bare specifier, pkg.name', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/node_modules/d/package.json') {
@@ -257,6 +295,69 @@ test('versioned bare specifier, pkg.name + pkg.version, version mismatch', (t) =
   t.alike(result, [])
 })
 
+test('bare specifier with invalid version suffix', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/d@notsemver/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    'd@notsemver',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/d@notsemver/prebuilds/${host}/d.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d.bare`,
+    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d.bare`
+  ])
+})
+
+test('versioned scoped bare specifier', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/@d/e/package.json') {
+      return {
+        name: '@d/e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    '@d/e@1.2.3',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/@d/e/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/node_modules/@d/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/b/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///a/prebuilds/${host}/d__e@1.2.3.bare`,
+    `file:///prebuilds/${host}/d__e@1.2.3.bare`
+  ])
+})
+
 test('bare specifier with scope and no version', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/node_modules/@d/e/package.json') {
@@ -287,6 +388,113 @@ test('bare specifier with scope and no version', (t) => {
     `file:///a/prebuilds/${host}/e.bare`,
     `file:///prebuilds/${host}/e.bare`
   ])
+})
+
+test('bare specifier, async readPackage', async (t) => {
+  async function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for await (const resolution of resolve(
+    'd',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/d/prebuilds/${host}/d.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d.bare`,
+    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d.bare`
+  ])
+})
+
+test('bare specifier, readPackage as third argument', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve('d', new URL('file:///a/b/c'), readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('bare specifier, prebuild resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const iterator = resolve(
+    'd',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === `file:///a/b/node_modules/d/prebuilds/${host}/d.bare`)
+  }
+
+  t.alike(result, [`file:///a/b/node_modules/d/prebuilds/${host}/d.bare`])
+  t.is(next.value, RESOLVED)
+})
+
+test('bare specifier, package self name mismatch', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'x'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    'd',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
 })
 
 test('relative specifier, pkg.name', (t) => {
@@ -467,6 +675,118 @@ test('relative specifier with scope and no version', (t) => {
   ])
 })
 
+test('relative specifier with trailing separator', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    './d/',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/d/prebuilds/${host}/d.bare`,
+    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d.bare`
+  ])
+})
+
+test('relative specifier with multiple extensions', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    './d',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare', '.node'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/d.bare`,
+    `file:///a/b/d.node`,
+    `file:///a/b/d/prebuilds/${host}/d.bare`,
+    `file:///a/b/d/prebuilds/${host}/d.node`,
+    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/b/prebuilds/${host}/d.node`,
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///a/prebuilds/${host}/d.node`,
+    `file:///prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d.node`
+  ])
+})
+
+test('relative specifier with percent-encoded slash from file: URL', (t) => {
+  t.plan(1)
+
+  try {
+    for (const resolution of resolve('./d%2fe', new URL('file:///a/b/c'), {
+      host,
+      extensions: ['.bare']
+    })) {
+      t.absent(resolution)
+    }
+  } catch (err) {
+    t.is(err.code, 'INVALID_ADDON_SPECIFIER')
+  }
+})
+
+test('relative specifier, file resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const iterator = resolve(
+    './d',
+    new URL('file:///a/b/c'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'file:///a/b/d.bare')
+  }
+
+  t.alike(result, ['file:///a/b/d.bare'])
+  t.is(next.value, RESOLVED)
+})
+
 test('absolute specifier, pkg.name', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///d/package.json') {
@@ -577,6 +897,25 @@ test('absolute specifier with extension', (t) => {
   }
 
   t.alike(result, [`file:///d.bare`])
+})
+
+test('absolute URL specifier, resolution found', (t) => {
+  const iterator = resolve('file:///d.bare', new URL('file:///a/b/c'), {
+    host,
+    extensions: ['.bare']
+  })[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'file:///d.bare')
+  }
+
+  t.alike(result, ['file:///d.bare'])
+  t.is(next.value, RESOLVED)
 })
 
 test('builtin, relative specifier, pkg.name', (t) => {
@@ -1186,6 +1525,45 @@ test('resolutions map', (t) => {
   t.alike(result, ['file:///a/b/d.bare'])
 })
 
+test('resolutions map with no match', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/node_modules/d/package.json') {
+      return {
+        name: 'd'
+      }
+    }
+
+    return null
+  }
+
+  const resolutions = {
+    'file:///a/b/c': {
+      './other': {
+        addon: './x.bare'
+      }
+    }
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    'd',
+    new URL('file:///a/b/c'),
+    { resolutions, conditions: ['addon'], host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/node_modules/d/prebuilds/${host}/d.bare`,
+    `file:///a/b/node_modules/prebuilds/${host}/d.bare`,
+    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d.bare`
+  ])
+})
+
 test('linked module, darwin', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/package.json') {
@@ -1299,6 +1677,346 @@ test('linked module, win32', (t) => {
   }
 
   t.alike(result, ['linked:e-1.2.3.dll', 'linked:e.dll'])
+})
+
+test('linked module, darwin, versioned framework resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:e.1.2.3.framework/e.1.2.3')
+  }
+
+  t.alike(result, ['linked:e.1.2.3.framework/e.1.2.3'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, darwin, versioned dylib resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:libe.1.2.3.dylib')
+  }
+
+  t.alike(result, ['linked:e.1.2.3.framework/e.1.2.3', 'linked:libe.1.2.3.dylib'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, darwin, framework resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:e.framework/e')
+  }
+
+  t.alike(result, ['linked:e.framework/e'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, darwin, dylib resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:libe.dylib')
+  }
+
+  t.alike(result, ['linked:e.framework/e', 'linked:libe.dylib'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, linux, versioned resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'linux-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:libe.1.2.3.so')
+  }
+
+  t.alike(result, ['linked:libe.1.2.3.so'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, linux, resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'linux-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:libe.so')
+  }
+
+  t.alike(result, ['linked:libe.so'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, win32, versioned resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'win32-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:e-1.2.3.dll')
+  }
+
+  t.alike(result, ['linked:e-1.2.3.dll'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, win32, resolution found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'win32-arm64'
+
+  const iterator = resolve('e', new URL('file:///a/b/c'), { host }, readPackage)[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'linked:e.dll')
+  }
+
+  t.alike(result, ['linked:e.dll'])
+  t.is(next.value, RESOLVED)
+})
+
+test('linked module, linux, no version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'linux-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['linked:libe.so'])
+})
+
+test('linked module, android, no version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'android-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['linked:libe.so'])
+})
+
+test('linked module, win32, no version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'win32-arm64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['linked:e.dll'])
+})
+
+test('linked module, unknown platform', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'freebsd-x64'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
+})
+
+test('linked module disabled', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+  const result = []
+
+  for (const resolution of resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    { host, linked: false },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [])
 })
 
 test('multiple hosts, bare specifier', (t) => {
@@ -1428,6 +2146,127 @@ test('universal prebuilds, ios-arm64-simulator', (t) => {
   }
 
   const host = 'ios-arm64-simulator'
+  const result = []
+
+  for (const resolution of resolve(
+    'c',
+    new URL('file:///a/b'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/node_modules/c/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/c/prebuilds/ios-universal-simulator/c.bare`,
+    `file:///a/node_modules/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/prebuilds/ios-universal-simulator/c.bare`,
+    `file:///a/prebuilds/${host}/c.bare`,
+    `file:///a/prebuilds/ios-universal-simulator/c.bare`,
+    `file:///prebuilds/${host}/c.bare`,
+    `file:///prebuilds/ios-universal-simulator/c.bare`,
+    `linked:c.framework/c`
+  ])
+})
+
+test('universal prebuilds, darwin-arm64, pkg.name + pkg.version', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/node_modules/c/package.json') {
+      return {
+        name: 'c',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-arm64'
+  const result = []
+
+  for (const resolution of resolve(
+    'c',
+    new URL('file:///a/b'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/node_modules/c/prebuilds/${host}/c@1.2.3.bare`,
+    `file:///a/node_modules/c/prebuilds/darwin-universal/c@1.2.3.bare`,
+    `file:///a/node_modules/c/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/c/prebuilds/darwin-universal/c.bare`,
+    `file:///a/node_modules/prebuilds/${host}/c@1.2.3.bare`,
+    `file:///a/node_modules/prebuilds/darwin-universal/c@1.2.3.bare`,
+    `file:///a/node_modules/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/prebuilds/darwin-universal/c.bare`,
+    `file:///a/prebuilds/${host}/c@1.2.3.bare`,
+    `file:///a/prebuilds/darwin-universal/c@1.2.3.bare`,
+    `file:///a/prebuilds/${host}/c.bare`,
+    `file:///a/prebuilds/darwin-universal/c.bare`,
+    `file:///prebuilds/${host}/c@1.2.3.bare`,
+    `file:///prebuilds/darwin-universal/c@1.2.3.bare`,
+    `file:///prebuilds/${host}/c.bare`,
+    `file:///prebuilds/darwin-universal/c.bare`,
+    `linked:c.1.2.3.framework/c.1.2.3`,
+    `linked:libc.1.2.3.dylib`,
+    `linked:c.framework/c`,
+    `linked:libc.dylib`
+  ])
+})
+
+test('universal prebuilds, darwin-x64', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/node_modules/c/package.json') {
+      return {
+        name: 'c'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'darwin-x64'
+  const result = []
+
+  for (const resolution of resolve(
+    'c',
+    new URL('file:///a/b'),
+    { host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/node_modules/c/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/c/prebuilds/darwin-universal/c.bare`,
+    `file:///a/node_modules/prebuilds/${host}/c.bare`,
+    `file:///a/node_modules/prebuilds/darwin-universal/c.bare`,
+    `file:///a/prebuilds/${host}/c.bare`,
+    `file:///a/prebuilds/darwin-universal/c.bare`,
+    `file:///prebuilds/${host}/c.bare`,
+    `file:///prebuilds/darwin-universal/c.bare`,
+    `linked:c.framework/c`,
+    `linked:libc.dylib`
+  ])
+})
+
+test('universal prebuilds, ios-x64-simulator', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/node_modules/c/package.json') {
+      return {
+        name: 'c'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'ios-x64-simulator'
   const result = []
 
   for (const resolution of resolve(

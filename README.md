@@ -37,6 +37,7 @@ for await (const resolution of resolve('./addon', new URL('file:///directory/'),
 ```
 
 <!-- bare-refgen:api start -->
+
 ## API
 
 ### Functions
@@ -53,11 +54,11 @@ Resolve `specifier` relative to `parentURL`, which must be a WHATWG `URL` instan
 
 **Parameters**
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `specifier` | `string` | — | The module specifier to resolve. |
-| `parentURL` | `URL` | — | The URL to resolve `specifier` relative to. |
-| `readPackage?` | `(url: URL) => JSON \| null` | — | Called with the URL of each package manifest encountered; must return the parsed manifest or `null`. Returning a promise disables synchronous iteration. |
+| Parameter      | Type                         | Default | Description                                                                                                                                              |
+| -------------- | ---------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `specifier`    | `string`                     | —       | The module specifier to resolve.                                                                                                                         |
+| `parentURL`    | `URL`                        | —       | The URL to resolve `specifier` relative to.                                                                                                              |
+| `readPackage?` | `(url: URL) => JSON \| null` | —       | Called with the URL of each package manifest encountered; must return the parsed manifest or `null`. Returning a promise disables synchronous iteration. |
 
 **Returns** `Iterable<URL>` — Yields candidate resolution `URL`s for the caller to test, in the order the algorithm tries them.
 
@@ -97,9 +98,9 @@ interface ResolveOptions {
 
 **Parameters**
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `msg` | `string` | — | The error message. |
+| Parameter | Type     | Default | Description        |
+| --------- | -------- | ------- | ------------------ |
+| `msg`     | `string` | —       | The error message. |
 
 **Returns** `AddonResolveError` — A new `AddonResolveError` with code `INVALID_ADDON_SPECIFIER`.
 
@@ -109,15 +110,16 @@ interface ResolveOptions {
 
 **Parameters**
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `msg` | `string` | — | The error message. |
+| Parameter | Type     | Default | Description        |
+| --------- | -------- | ------- | ------------------ |
+| `msg`     | `string` | —       | The error message. |
 
 **Returns** `AddonResolveError` — A new `AddonResolveError` with code `INVALID_PACKAGE_NAME`.
 
 #### `code: string`
 
 [source](https://github.com/holepunchto/bare-addon-resolve/blob/v1.10.0/lib/errors.d.ts#L2)
+
 <!-- bare-refgen:api end -->
 
 ## License

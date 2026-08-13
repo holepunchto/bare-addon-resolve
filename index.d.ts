@@ -27,10 +27,9 @@ interface ResolveOptions {
  * parsed manifest or `null`. Returning a promise disables synchronous iteration.
  * @returns Yields candidate resolution `URL`s for the caller to test, in the order the algorithm
  * tries them.
- * @throws {INVALID_ADDON_SPECIFIER} the addon specifier is not a valid package name or contains an
- * invalid escape sequence.
- * @throws {INVALID_PACKAGE_NAME} a package manifest's `name` field is invalid (for example contains
- * `__`).
+ * @throws {INVALID_ADDON_SPECIFIER} `parentURL` is a `file:` URL and the specifier contains a
+ * percent-encoded `/` or `\` (`%2f` or `%5c`, in either case).
+ * @throws {INVALID_PACKAGE_NAME} a package manifest's `name` field contains `__`.
  */
 declare function resolve(
   specifier: string,

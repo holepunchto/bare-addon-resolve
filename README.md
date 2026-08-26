@@ -38,9 +38,7 @@ for await (const resolution of resolve('./addon', new URL('file:///directory/'),
 
 ## API
 
-See the [`bare-addon-resolve` reference][reference].
-
-[reference]: https://docs.pears.com/reference/bare/modules/bare-addon-resolve
+See the [`bare-addon-resolve` reference](https://docs.pears.com/reference/bare/modules/bare-addon-resolve).
 
 ## License
 

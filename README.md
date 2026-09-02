@@ -38,49 +38,9 @@ for await (const resolution of resolve('./addon', new URL('file:///directory/'),
 
 ## API
 
-#### `const resolver = resolve(specifier, parentURL[, options][, readPackage])`
+See the [`bare-addon-resolve` reference](https://docs.pears.com/reference/bare/modules/bare-addon-resolve).
 
-Resolve `specifier` relative to `parentURL`, which must be a WHATWG `URL` instance. `readPackage` is called with a `URL` instance for every package manifest to be read and must either return the parsed JSON package manifest, if it exists, or `null`. If `readPackage` returns a promise, synchronous iteration is not supported.
-
-Options include:
-
-```js
-options = {
-  // A list of builtin addon specifiers. If matched, the protocol of the
-  // resolved URL will be `builtinProtocol`.
-  builtins: [],
-  // The protocol to use for resolved builtin addon specifiers.
-  builtinProtocol: 'builtin:',
-  // Whether or not addons linked ahead-of-time should be resolved.
-  linked: true,
-  // The protocol to use for addons linked ahead-of-time.
-  linkedProtocol: 'linked:',
-  // The supported import conditions. "default" is always recognized.
-  conditions: [],
-  // An array reference which will contain the matched conditions when yielding
-  // resolutions.
-  matchedConditions: [],
-  // The `<platform>-<arch>` combinations to look for when resolving dynamic
-  // addons. If empty, only builtin specifiers can be resolved. In Bare,
-  // pass `[Bare.Addon.host]`.
-  hosts: [],
-  // The file extensions to look for when resolving dynamic addons.
-  extensions: [],
-  // A map of preresolved imports with keys being serialized directory URLs and
-  // values being "imports" maps.
-  resolutions
-}
-```
-
-#### `for (const resolution of resolver)`
-
-Synchronously iterate the addon resolution candidates. The resolved addon is the first candidate that exists as a file on the file system.
-
-#### `for await (const resolution of resolver)`
-
-Asynchronously iterate the addon resolution candidates. If `readPackage` returns promises, these will be awaited. The same comments as `for (const resolution of resolver)` apply.
-
-### Algorithm
+## Algorithm
 
 The following generator functions implement the resolution algorithm. The yielded values have the following shape:
 
@@ -137,7 +97,7 @@ Options are the same as `resolve()` for all functions.
 
 The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenced below are provided by [`bare-module-resolve`](https://github.com/holepunchto/bare-module-resolve) and behave as documented there.
 
-#### `const generator = resolve.addon(specifier, parentURL[, options])`
+### `const generator = resolve.addon(specifier, parentURL[, options])`
 
 1.  If `specifier` [starts with a Windows drive letter](https://url.spec.whatwg.org/#start-with-a-windows-drive-letter):
     1.  Prepend `/` to `specifier`.
@@ -156,12 +116,12 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
     2.  Return `directory(specifier, version, parentURL, options)`.
 8.  Return `package(specifier, version, parentURL, options)`.
 
-#### `const generator = resolve.url(url, parentURL[, options])`
+### `const generator = resolve.url(url, parentURL[, options])`
 
 1.  If `url` is not a valid URL, return.
 2.  Yield `url`.
 
-#### `const generator = resolve.package(packageSpecifier, packageVersion, parentURL[, options])`
+### `const generator = resolve.package(packageSpecifier, packageVersion, parentURL[, options])`
 
 1.  If `packageSpecifier` is the empty string, throw.
 2.  If `packageSpecifier` does not start with `@`:
@@ -181,7 +141,7 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
         1.  Return `directory(packageSubpath, packageVersion, packageURL, options)`.
     5.  If the path of `parentURL` is empty or `/`, return.
 
-#### `const generator = resolve.packageSelf(packageName, packageSubpath, packageVersion, parentURL[, options])`
+### `const generator = resolve.packageSelf(packageName, packageSubpath, packageVersion, parentURL[, options])`
 
 1.  For each value `packageURL` of `lookupPackageScope(parentURL, options)`:
     1.  Let `info` be the result of yielding `packageURL`.
@@ -189,7 +149,7 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
         1.  If `info.name` does not equal `packageName`, return.
         2.  Return `directory(packageSubpath, packageVersion, packageURL, options)`.
 
-#### `const generator = resolve.file(filename, parentURL[, options])`
+### `const generator = resolve.file(filename, parentURL[, options])`
 
 1.  If `filename` equals `.` or `..`, or if `filename` ends with `/` or `\`, return.
 2.  If `parentURL` has an opaque path, return.
@@ -198,7 +158,7 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
     1.  If `filename` ends with `ext`, set `ext` to the empty string.
     2.  Yield the resolution of `filename` concatenated with `ext` relative to `parentURL`; if it resolves, return.
 
-#### `const generator = resolve.directory(dirname, version, parentURL[, options])`
+### `const generator = resolve.directory(dirname, version, parentURL[, options])`
 
 1.  If `parentURL` has an opaque path, return.
 2.  If `dirname` ends with `/` or `\`:
@@ -232,7 +192,7 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
     3.  If `resolved` is `true`, return.
 12. Return `linked(name, version, options)`.
 
-#### `const generator = resolve.linked(name, version[, options])`
+### `const generator = resolve.linked(name, version[, options])`
 
 1.  If `options.linked` is `false` or `options.hosts` is empty, return.
 2.  For each value `host` of `options.hosts`:

@@ -71,7 +71,7 @@ exports.addon = function* (specifier, parentURL, opts = {}) {
   let status
 
   if (resolutions) {
-    status = yield* resolve.preresolved(specifier, resolutions, parentURL, opts)
+    status = yield* preresolved(specifier, resolutions, parentURL, opts)
 
     if (status) return status
   }
@@ -114,6 +114,27 @@ exports.addon = function* (specifier, parentURL, opts = {}) {
   }
 
   return yield* exports.package(specifier, version, parentURL, opts)
+}
+
+function* preresolved(specifier, resolutions, parentURL, opts) {
+  const { deferredProtocol = 'deferred:' } = opts
+
+  const generator = resolve.preresolved(specifier, resolutions, parentURL, {
+    ...opts,
+    deferredProtocol: null
+  })
+
+  let next = generator.next()
+
+  while (next.done !== true) {
+    const value = next.value
+
+    if (value.resolution && value.resolution.protocol === deferredProtocol) return UNRESOLVED
+
+    next = generator.next(yield value)
+  }
+
+  return next.value
 }
 
 exports.url = function* (url, parentURL, opts = {}) {
@@ -265,8 +286,7 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
   const {
     host = null, // Shorthand for single host resolution
     hosts = host !== null ? [host] : [],
-    builtins = [],
-    matchedConditions = []
+    builtins = []
   } = opts
 
   if (hasOpaquePath(parentURL)) return UNRESOLVED
@@ -311,6 +331,29 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
 
   if (status) return status
 
+  const native = hosts.filter((host) => !isWebAssemblyHost(host))
+
+  status = yield* prebuilds(name, version, unversioned, directoryURL, native, opts)
+
+  if (status === RESOLVED) return status
+
+  status = yield* exports.linked(name, version, opts)
+
+  if (status === RESOLVED) return status
+
+  const wasm = hosts.filter(isWebAssemblyHost)
+
+  return yield* prebuilds(name, version, unversioned, directoryURL, wasm, {
+    ...opts,
+    extensions: ['.wasm']
+  })
+}
+
+function* prebuilds(name, version, unversioned, directoryURL, hosts, opts) {
+  const { matchedConditions = [] } = opts
+
+  let status = UNRESOLVED
+
   for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
     status = UNRESOLVED
 
@@ -345,7 +388,7 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
     if (status === RESOLVED) return status
   }
 
-  return yield* exports.linked(name, version, opts)
+  return status
 }
 
 exports.linked = function* (name, version = null, opts = {}) {
@@ -468,6 +511,10 @@ function* platformArtefact(name, version = null, platform, opts = {}) {
 exports.isWindowsDriveLetter = resolve.isWindowsDriveLetter
 
 exports.startsWithWindowsDriveLetter = resolve.startsWithWindowsDriveLetter
+
+function isWebAssemblyHost(host) {
+  return host.startsWith('wasi-')
+}
 
 function supportsUniversalPrebuilds(host) {
   return (

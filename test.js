@@ -1525,6 +1525,44 @@ test('resolutions map', (t) => {
   t.alike(result, ['file:///a/b/d.bare'])
 })
 
+test('resolutions map with deferred resolution', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'd',
+        exports: './index.js'
+      }
+    }
+
+    return null
+  }
+
+  const resolutions = {
+    'file:///a/b/c': {
+      '.': {
+        addon: 'deferred:.'
+      }
+    }
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    '.',
+    new URL('file:///a/b/c'),
+    { resolutions, conditions: ['addon'], host, extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    `file:///a/b/prebuilds/${host}/d.bare`,
+    `file:///a/prebuilds/${host}/d.bare`,
+    `file:///prebuilds/${host}/d.bare`
+  ])
+})
+
 test('resolutions map with no match', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/node_modules/d/package.json') {
@@ -2374,4 +2412,108 @@ test('prebuilds scope lookup with data: URL', (t) => {
   }
 
   t.alike(result, [])
+})
+
+test('webassembly prebuilds after native prebuilds and linked modules', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    { hosts: ['linux-x64', 'wasi-wasm32'], extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/linux-x64/e@1.2.3.bare',
+    'file:///a/b/prebuilds/linux-x64/e.bare',
+    'file:///a/prebuilds/linux-x64/e@1.2.3.bare',
+    'file:///a/prebuilds/linux-x64/e.bare',
+    'file:///prebuilds/linux-x64/e@1.2.3.bare',
+    'file:///prebuilds/linux-x64/e.bare',
+    'linked:libe.1.2.3.so',
+    'linked:libe.so',
+    'file:///a/b/prebuilds/wasi-wasm32/e@1.2.3.wasm',
+    'file:///a/b/prebuilds/wasi-wasm32/e.wasm',
+    'file:///a/prebuilds/wasi-wasm32/e@1.2.3.wasm',
+    'file:///a/prebuilds/wasi-wasm32/e.wasm',
+    'file:///prebuilds/wasi-wasm32/e@1.2.3.wasm',
+    'file:///prebuilds/wasi-wasm32/e.wasm'
+  ])
+})
+
+test('webassembly prebuilds only', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const result = []
+
+  for (const resolution of resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    { host: 'wasi-wasm32', extensions: ['.bare'] },
+    readPackage
+  )) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/wasi-wasm32/e.wasm',
+    'file:///a/prebuilds/wasi-wasm32/e.wasm',
+    'file:///prebuilds/wasi-wasm32/e.wasm'
+  ])
+})
+
+test('webassembly prebuilds, native prebuild found', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const iterator = resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    { hosts: ['linux-x64', 'wasi-wasm32'], extensions: ['.bare'] },
+    readPackage
+  )[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'file:///a/prebuilds/linux-x64/e.bare')
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/linux-x64/e.bare',
+    'file:///a/prebuilds/linux-x64/e.bare'
+  ])
+  t.is(next.value, RESOLVED)
 })

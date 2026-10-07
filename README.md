@@ -61,8 +61,9 @@ options = {
   // resolutions.
   matchedConditions: [],
   // The `<platform>-<arch>` combinations to look for when resolving dynamic
-  // addons. If empty, only builtin specifiers can be resolved. In Bare,
-  // pass `[Bare.Addon.host]`.
+  // addons. If empty, only builtin specifiers can be resolved. WebAssembly
+  // hosts, such as `wasi-wasm32`, are only used when no native addon is found.
+  // In Bare, pass `[Bare.Addon.host, 'wasi-wasm32']`.
   hosts: [],
   // The file extensions to look for when resolving dynamic addons.
   extensions: [],
@@ -142,7 +143,7 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
 1.  If `specifier` [starts with a Windows drive letter](https://url.spec.whatwg.org/#start-with-a-windows-drive-letter):
     1.  Prepend `/` to `specifier`.
 2.  If `options.resolutions` is set:
-    1.  If `preresolved(specifier, options.resolutions, parentURL, options)` yields, return.
+    1.  If `preresolved(specifier, options.resolutions, parentURL, options)` yields a resolution that isn't deferred, return.
 3.  If `url(specifier, parentURL, options)` yields, return.
 4.  Let `version` be `null`.
 5.  Let `i` be the index of the last `@` in `specifier`.
@@ -216,9 +217,16 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
     1.  If `version` is not `null` and `info.version` does not equal `version`, return.
     2.  Set `version` to `info.version`.
 10. If `builtinTarget(name, version, options.builtins, options)` yields, return.
-11. For each value `prebuildsURL` of `lookupPrebuildsScope(directoryURL, options)`:
+11. Let `native` be the values of `options.hosts` that do not start with `wasi-`, and `wasm` the values that do.
+12. If `prebuilds(name, version, unversioned, directoryURL, native, options)` resolves, return.
+13. If `linked(name, version, options)` resolves, return.
+14. Return `prebuilds(name, version, unversioned, directoryURL, wasm, options)` with `options.extensions` set to `['.wasm']`.
+
+#### `const generator = prebuilds(name, version, unversioned, directoryURL, hosts, options)`
+
+1.  For each value `prebuildsURL` of `lookupPrebuildsScope(directoryURL, options)`:
     1.  Let `resolved` be `false`.
-    2.  For each value `host` of `options.hosts`:
+    2.  For each value `host` of `hosts`:
         1.  Let `conditions` be the result of splitting `host` on `-`.
         2.  If `host` is one of `darwin-arm64`, `darwin-x64`, `ios-arm64-simulator`, or `ios-x64-simulator`, let `universal` be `host` with its second component replaced by `universal`; otherwise let `universal` be `null`.
         3.  Append the values of `conditions` to `options.matchedConditions`.
@@ -230,7 +238,6 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
             2.  If `universal` is not `null` and `file(universal + '/' + name, prebuildsURL, options)` resolves, set `resolved` to `true`.
         6.  Remove the values of `conditions` from `options.matchedConditions`.
     3.  If `resolved` is `true`, return.
-12. Return `linked(name, version, options)`.
 
 #### `const generator = resolve.linked(name, version[, options])`
 

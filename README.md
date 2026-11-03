@@ -176,27 +176,34 @@ The `preresolved`, `builtinTarget`, and `lookupPackageScope` generators referenc
     1.  If `version` is not `null` and `info.version` does not equal `version`, return.
     2.  Set `version` to `info.version`.
 10. If `builtinTarget(name, version, options.builtins, options)` yields, return.
-11. Let `native` be the values of `options.hosts` that do not start with `wasi-`, and `wasm` the values that do.
-12. If `prebuilds(name, version, unversioned, directoryURL, native, options)` resolves, return.
-13. If `linked(name, version, options)` resolves, return.
-14. Return `prebuilds(name, version, unversioned, directoryURL, wasm, options)` with `options.extensions` set to `['.wasm']`.
+11. Let `pending` be the values of `options.hosts` that do not start with `wasi-`, and `wasm` the values that do.
+12. Let `resolved` be `false`.
+13. If `prebuilds(name, version, unversioned, directoryURL, pending, options)` resolves, set `resolved` to `true`.
+14. If `resolved` is `true` and `pending` is empty, return.
+15. For each value `host` of `pending`:
+    1.  If `linked(name, version, options)` with `options.hosts` set to `[host]` resolves, remove `host` from `pending` and set `resolved` to `true`.
+16. If `resolved` is `true` and `pending` is empty, return.
+17. Return `prebuilds(name, version, unversioned, directoryURL, wasm, options)` with `options.extensions` set to `['.wasm']`.
 
 #### `const generator = prebuilds(name, version, unversioned, directoryURL, hosts, options)`
 
+Each host is resolved for in the closest scope that has a prebuild for it, and is removed from `hosts` once it is.
+
 1.  For each value `prebuildsURL` of `lookupPrebuildsScope(directoryURL, options)`:
-    1.  Let `resolved` be `false`.
-    2.  For each value `host` of `hosts`:
-        1.  Let `conditions` be the result of splitting `host` on `-`.
-        2.  If `host` is one of `darwin-arm64`, `darwin-x64`, `ios-arm64-simulator`, or `ios-x64-simulator`, let `universal` be `host` with its second component replaced by `universal`; otherwise let `universal` be `null`.
-        3.  Append the values of `conditions` to `options.matchedConditions`.
-        4.  If `version` is not `null`:
-            1.  If `file(host + '/' + name + '@' + version, prebuildsURL, options)` resolves, set `resolved` to `true`.
-            2.  If `universal` is not `null` and `file(universal + '/' + name + '@' + version, prebuildsURL, options)` resolves, set `resolved` to `true`.
-        5.  If `unversioned` is `true`:
-            1.  If `file(host + '/' + name, prebuildsURL, options)` resolves, set `resolved` to `true`.
-            2.  If `universal` is not `null` and `file(universal + '/' + name, prebuildsURL, options)` resolves, set `resolved` to `true`.
-        6.  Remove the values of `conditions` from `options.matchedConditions`.
-    3.  If `resolved` is `true`, return.
+    1.  For each value `host` of `hosts`:
+        1.  Let `found` be `false`.
+        2.  Let `conditions` be the result of splitting `host` on `-`.
+        3.  If `host` is one of `darwin-arm64`, `darwin-x64`, `ios-arm64-simulator`, or `ios-x64-simulator`, let `universal` be `host` with its second component replaced by `universal`; otherwise let `universal` be `null`.
+        4.  Append the values of `conditions` to `options.matchedConditions`.
+        5.  If `version` is not `null`:
+            1.  If `file(host + '/' + name + '@' + version, prebuildsURL, options)` resolves, set `found` to `true`.
+            2.  If `universal` is not `null` and `file(universal + '/' + name + '@' + version, prebuildsURL, options)` resolves, set `found` to `true`.
+        6.  If `unversioned` is `true`:
+            1.  If `file(host + '/' + name, prebuildsURL, options)` resolves, set `found` to `true`.
+            2.  If `universal` is not `null` and `file(universal + '/' + name, prebuildsURL, options)` resolves, set `found` to `true`.
+        7.  Remove the values of `conditions` from `options.matchedConditions`.
+        8.  If `found` is `true`, remove `host` from `hosts`.
+    2.  If `hosts` is empty, return.
 
 ### `const generator = resolve.linked(name, version[, options])`
 

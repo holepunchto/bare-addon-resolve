@@ -2517,3 +2517,86 @@ test('webassembly prebuilds, native prebuild found', (t) => {
   ])
   t.is(next.value, RESOLVED)
 })
+
+test('webassembly prebuilds, native prebuild found for one of several hosts', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const exists = [
+    'file:///a/b/prebuilds/linux-x64/e.bare',
+    'file:///a/b/prebuilds/wasi-wasm32/e.wasm'
+  ]
+
+  const iterator = resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    { hosts: ['linux-x64', 'linux-arm64', 'wasi-wasm32'], extensions: ['.bare'] },
+    readPackage
+  )[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(exists.includes(next.value.href))
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/linux-x64/e.bare',
+    'file:///a/b/prebuilds/linux-arm64/e.bare',
+    'file:///a/prebuilds/linux-arm64/e.bare',
+    'file:///prebuilds/linux-arm64/e.bare',
+    'linked:libe.so',
+    'file:///a/b/prebuilds/wasi-wasm32/e.wasm'
+  ])
+  t.is(next.value, RESOLVED)
+})
+
+test('webassembly prebuilds, native prebuild found for one of several hosts, no webassembly prebuild', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e'
+      }
+    }
+
+    return null
+  }
+
+  const iterator = resolve(
+    'e',
+    new URL('file:///a/b/c'),
+    { hosts: ['linux-x64', 'linux-arm64', 'wasi-wasm32'], extensions: ['.bare'] },
+    readPackage
+  )[Symbol.iterator]()
+
+  const result = []
+
+  let next = iterator.next()
+
+  while (next.done !== true) {
+    result.push(next.value.href)
+    next = iterator.next(next.value.href === 'file:///a/b/prebuilds/linux-x64/e.bare')
+  }
+
+  t.alike(result, [
+    'file:///a/b/prebuilds/linux-x64/e.bare',
+    'file:///a/b/prebuilds/linux-arm64/e.bare',
+    'file:///a/prebuilds/linux-arm64/e.bare',
+    'file:///prebuilds/linux-arm64/e.bare',
+    'linked:libe.so',
+    'file:///a/b/prebuilds/wasi-wasm32/e.wasm',
+    'file:///a/prebuilds/wasi-wasm32/e.wasm',
+    'file:///prebuilds/wasi-wasm32/e.wasm'
+  ])
+  t.is(next.value, RESOLVED)
+})

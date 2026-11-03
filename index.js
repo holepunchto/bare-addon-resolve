@@ -331,33 +331,48 @@ exports.directory = function* (dirname, version, parentURL, opts = {}) {
 
   if (status) return status
 
-  const native = hosts.filter((host) => !isWebAssemblyHost(host))
+  // The native hosts that are yet to be resolved for, each of which falls back
+  // to a linked module and then to a WebAssembly addon on its own.
+  const pending = hosts.filter((host) => !isWebAssemblyHost(host))
 
-  status = yield* prebuilds(name, version, unversioned, directoryURL, native, opts)
+  status = yield* prebuilds(name, version, unversioned, directoryURL, pending, opts)
 
-  if (status === RESOLVED) return status
+  if (status === RESOLVED && pending.length === 0) return status
 
-  status = yield* exports.linked(name, version, opts)
+  for (const host of [...pending]) {
+    const linked = yield* exports.linked(name, version, { ...opts, hosts: [host] })
 
-  if (status === RESOLVED) return status
+    if (linked === RESOLVED) pending.splice(pending.indexOf(host), 1)
+
+    status |= linked
+  }
+
+  if (status === RESOLVED && pending.length === 0) return status
 
   const wasm = hosts.filter(isWebAssemblyHost)
 
-  return yield* prebuilds(name, version, unversioned, directoryURL, wasm, {
+  const fallback = yield* prebuilds(name, version, unversioned, directoryURL, wasm, {
     ...opts,
     extensions: ['.wasm']
   })
+
+  return status === RESOLVED ? status : fallback
 }
 
+// Each scope is only searched for the hosts that no closer scope resolved for,
+// which are left in `hosts`.
 function* prebuilds(name, version, unversioned, directoryURL, hosts, opts) {
   const { matchedConditions = [] } = opts
 
   let status = UNRESOLVED
+  let resolved = false
 
   for (const prebuildsURL of exports.lookupPrebuildsScope(directoryURL, opts)) {
     status = UNRESOLVED
 
-    for (const host of hosts) {
+    for (const host of [...hosts]) {
+      let found = UNRESOLVED
+
       const conditions = host.split('-')
 
       const universal = supportsUniversalPrebuilds(host)
@@ -367,28 +382,34 @@ function* prebuilds(name, version, unversioned, directoryURL, hosts, opts) {
       matchedConditions.push(...conditions)
 
       if (version !== null) {
-        status |= yield* exports.file(host + '/' + name + '@' + version, prebuildsURL, opts)
+        found |= yield* exports.file(host + '/' + name + '@' + version, prebuildsURL, opts)
 
         if (universal) {
-          status |= yield* exports.file(universal + '/' + name + '@' + version, prebuildsURL, opts)
+          found |= yield* exports.file(universal + '/' + name + '@' + version, prebuildsURL, opts)
         }
       }
 
       if (unversioned) {
-        status |= yield* exports.file(host + '/' + name, prebuildsURL, opts)
+        found |= yield* exports.file(host + '/' + name, prebuildsURL, opts)
 
         if (universal) {
-          status |= yield* exports.file(universal + '/' + name, prebuildsURL, opts)
+          found |= yield* exports.file(universal + '/' + name, prebuildsURL, opts)
         }
       }
 
       for (const _ of conditions) matchedConditions.pop()
+
+      if (found === RESOLVED) hosts.splice(hosts.indexOf(host), 1)
+
+      status |= found
     }
 
-    if (status === RESOLVED) return status
+    if (status === RESOLVED) resolved = true
+
+    if (resolved && hosts.length === 0) return RESOLVED
   }
 
-  return status
+  return resolved ? RESOLVED : status
 }
 
 exports.linked = function* (name, version = null, opts = {}) {

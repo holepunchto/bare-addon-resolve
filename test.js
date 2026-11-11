@@ -1651,6 +1651,28 @@ test('linked module, ios', (t) => {
   t.alike(result, ['linked:e.1.2.3.framework/e.1.2.3', 'linked:e.framework/e'])
 })
 
+test('linked module, watchos', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/b/package.json') {
+      return {
+        name: 'e',
+        version: '1.2.3'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'watchos-arm64-32'
+  const result = []
+
+  for (const resolution of resolve('e', new URL('file:///a/b/c'), { host }, readPackage)) {
+    result.push(resolution.href)
+  }
+
+  t.alike(result, ['linked:e.1.2.3.framework/e.1.2.3', 'linked:e.framework/e'])
+})
+
 test('linked module, linux', (t) => {
   function readPackage(url) {
     if (url.href === 'file:///a/b/package.json') {
@@ -2205,6 +2227,43 @@ test('universal prebuilds, ios-arm64-simulator', (t) => {
     `file:///prebuilds/${host}/c.bare`,
     `file:///prebuilds/ios-universal-simulator/c.bare`,
     `linked:c.framework/c`
+  ])
+})
+
+test('universal prebuilds, watchos-arm64-32', (t) => {
+  function readPackage(url) {
+    if (url.href === 'file:///a/node_modules/c/package.json') {
+      return {
+        name: 'c'
+      }
+    }
+
+    return null
+  }
+
+  const host = 'watchos-arm64-32'
+  const matched = []
+  const result = []
+
+  for (const resolution of resolve(
+    'c',
+    new URL('file:///a/b'),
+    { host, extensions: ['.bare'], matchedConditions: matched },
+    readPackage
+  )) {
+    result.push([resolution.href, [...matched]])
+  }
+
+  t.alike(result, [
+    [`file:///a/node_modules/c/prebuilds/${host}/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///a/node_modules/c/prebuilds/watchos-universal/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///a/node_modules/prebuilds/${host}/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///a/node_modules/prebuilds/watchos-universal/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///a/prebuilds/${host}/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///a/prebuilds/watchos-universal/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///prebuilds/${host}/c.bare`, ['watchos', 'arm64-32']],
+    [`file:///prebuilds/watchos-universal/c.bare`, ['watchos', 'arm64-32']],
+    ['linked:c.framework/c', ['watchos']]
   ])
 })
 

@@ -1,5 +1,6 @@
 const resolve = require('bare-module-resolve')
 const { Version } = require('bare-semver')
+const hostParser = require('bare-host-parser')
 const errors = require('./lib/errors')
 
 module.exports = exports = function resolve(specifier, parentURL, opts, readPackage) {
@@ -373,10 +374,10 @@ function* prebuilds(name, version, unversioned, directoryURL, hosts, opts) {
     for (const host of [...hosts]) {
       let found = UNRESOLVED
 
-      const conditions = host.split('-')
+      const conditions = hostParser.conditions(host)
 
       const universal = supportsUniversalPrebuilds(host)
-        ? conditions.with(1, 'universal').join('-')
+        ? hostParser.format({ ...hostParser.parse(host), arch: 'universal' })
         : null
 
       matchedConditions.push(...conditions)
@@ -425,9 +426,7 @@ exports.linked = function* (name, version = null, opts = {}) {
   let status = UNRESOLVED
 
   for (const host of hosts) {
-    const [platform = null] = host.split('-', 1)
-
-    if (platform === null) continue
+    const [platform] = hostParser.conditions(host)
 
     matchedConditions.push(platform)
 
@@ -442,7 +441,7 @@ exports.linked = function* (name, version = null, opts = {}) {
 function* platformArtefact(name, version = null, platform, opts = {}) {
   const { linkedProtocol = 'linked:' } = opts
 
-  if (platform === 'darwin' || platform === 'ios') {
+  if (platform === 'darwin' || platform === 'ios' || platform === 'watchos') {
     if (version !== null) {
       if (
         yield {
@@ -542,7 +541,11 @@ function supportsUniversalPrebuilds(host) {
     host === 'darwin-arm64' ||
     host === 'darwin-x64' ||
     host === 'ios-arm64-simulator' ||
-    host === 'ios-x64-simulator'
+    host === 'ios-x64-simulator' ||
+    host === 'watchos-arm64' ||
+    host === 'watchos-arm64-32' ||
+    host === 'watchos-arm64-simulator' ||
+    host === 'watchos-x64-simulator'
   )
 }
 

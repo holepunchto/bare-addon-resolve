@@ -192,8 +192,8 @@ Each host is resolved for in the closest scope that has a prebuild for it, and i
 1.  For each value `prebuildsURL` of `lookupPrebuildsScope(directoryURL, options)`:
     1.  For each value `host` of `hosts`:
         1.  Let `found` be `false`.
-        2.  Let `conditions` be the result of splitting `host` on `-`.
-        3.  If `host` is one of `darwin-arm64`, `darwin-x64`, `ios-arm64-simulator`, or `ios-x64-simulator`, let `universal` be `host` with its second component replaced by `universal`; otherwise let `universal` be `null`.
+        2.  Let `conditions` be the result of `conditions(host)` from [`bare-host-parser`](https://github.com/holepunchto/bare-host-parser).
+        3.  If `host` is one of `darwin-arm64`, `darwin-x64`, `ios-arm64-simulator`, `ios-x64-simulator`, `watchos-arm64`, `watchos-arm64-32`, `watchos-arm64-simulator`, or `watchos-x64-simulator`, let `universal` be `host` with its architecture replaced by `universal`; otherwise let `universal` be `null`.
         4.  Append the values of `conditions` to `options.matchedConditions`.
         5.  If `version` is not `null`:
             1.  If `file(host + '/' + name + '@' + version, prebuildsURL, options)` resolves, set `found` to `true`.
@@ -209,11 +209,10 @@ Each host is resolved for in the closest scope that has a prebuild for it, and i
 
 1.  If `options.linked` is `false` or `options.hosts` is empty, return.
 2.  For each value `host` of `options.hosts`:
-    1.  Let `platform` be the substring of `host` until the first `-`.
-    2.  If `platform` is the empty string, continue.
-    3.  Append `platform` to `options.matchedConditions`.
-    4.  Let `candidates` be the following artefact names, in order, where each entry containing `<version>` is only included when `version` is not `null`:
-        1.  If `platform` is `darwin` or `ios`:
+    1.  Let `platform` be the first value of `conditions(host)` from [`bare-host-parser`](https://github.com/holepunchto/bare-host-parser).
+    2.  Append `platform` to `options.matchedConditions`.
+    3.  Let `candidates` be the following artefact names, in order, where each entry containing `<version>` is only included when `version` is not `null`:
+        1.  If `platform` is `darwin`, `ios`, or `watchos`:
             1.  `<name>.<version>.framework/<name>.<version>`
             2.  `lib<name>.<version>.dylib`, only if `platform` is `darwin`
             3.  `<name>.framework/<name>`
@@ -224,9 +223,9 @@ Each host is resolved for in the closest scope that has a prebuild for it, and i
         3.  Otherwise, if `platform` is `win32`:
             1.  `<name>-<version>.dll`
             2.  `<name>.dll`
-    5.  For each value `candidate` of `candidates`:
+    4.  For each value `candidate` of `candidates`:
         1.  Yield `options.linkedProtocol` concatenated with `candidate`; if it resolves, stop iterating `candidates`.
-    6.  Remove `platform` from `options.matchedConditions`.
+    5.  Remove `platform` from `options.matchedConditions`.
 
 ## License
 
